@@ -34,6 +34,7 @@ const GAME = {
     ]
     */
     players: [],
+    standBy: [], // 新增standBy陣列來存放暫時休息的玩家
     gameHistory: [],
 
     /* 場地
@@ -102,6 +103,10 @@ const GAME = {
             $('#playerList').append(`<li>${player.name}</li>`);
         });
     },
+
+    /**
+     * 更新歷史紀錄列表
+     */
     updateGameHistoryDisplay() {
         $('#gameHistoryList').empty();
         this.gameHistory.forEach((record, index) => {
@@ -151,7 +156,7 @@ const GAME = {
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
         console.log(this.players);
         var players = this.players
-            .filter(p => !p.isPlaying)                      // 放空的人
+            .filter(p => !p.isPlaying && !this.standBy.includes(p))// 過濾掉正在遊戲中和在standBy中的玩家
             .reduce((ary, p) => {
                 /* 
                     照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
@@ -274,6 +279,39 @@ const GAME = {
         }
     },
 
+     /**
+     *  將玩家加入standBy
+     *  @param {String} playerName - 玩家的名字
+     *  @return {Player} - 被加入standBy的玩家資料
+     */
+     addStandBy(playerName) {
+        const player = this.players.find(p => p.name === playerName);
+        if (player) {
+            this.standBy.push(player);
+            return player;
+        } else {
+            alert('球員不存在');
+            console.log(`Player with name ${playerName} not found.`);
+            return null;
+        }
+    },
+
+    /**
+     *  從standBy移除玩家
+     *  @param {String} playerName - 玩家的名字
+     *  @return {Player} - 被移除standBy的玩家資料
+     */
+    removeStandBy(playerName) {
+        const index = GAME.standBy.findIndex(p => p.name === playerName);
+        if (index !== -1) {
+            const player = GAME.standBy.splice(index, 1)[0];
+            return player;
+        } else {
+            console.log(`Player with name ${playerName} not found in standBy.`);
+            return null;
+        }
+    },
+
     /**
      *  重置所有玩家紀錄
      */
@@ -336,6 +374,16 @@ $(document).ready(() => {
         saveData();
     });
 
+    // 新增休息球員按鈕
+    $('#addStandByBtn').on('click', () => {
+        const playerName = prompt('請輸入球員姓名:');
+        if (playerName) {
+            GAME.addStandBy(playerName);
+            renderPlayers();
+            saveData();
+        }
+    });
+
     // 刪除球員按鈕
     $('#removePlayerBtn').on('click', () => {
         const playerName = prompt('請輸入要移除的球員姓名:');
@@ -345,6 +393,16 @@ $(document).ready(() => {
             saveData();
         }
     });
+
+    // 刪除休息球員按鈕
+    // $('#removeStandByBtn').on('click', () => {
+    //     const playerName = prompt('請輸入要移除的球員姓名:');
+    //     if (playerName) {
+    //         GAME.removeStandBy(playerName);
+    //         renderPlayers();
+    //         saveData();
+    //     }
+    // });
 
     // 刪除空場地按鈕
     $('#removeCourtBtn').on('click', () => {
@@ -402,7 +460,14 @@ $(document).ready(() => {
     function renderPlayers() {
         $('#playersList').empty();
         GAME.players.forEach((player) => {
-            $('#playersList').append(`<li>${player.name} (遊玩次數: ${player.playCount})</li>`);
+            const isStandBy = GAME.standBy.some(p => p.name === player.name);
+            const $playerItem = $(`
+                <li>
+                    ${player.name} (遊玩次數: ${player.playCount})
+                    ${isStandBy ? ` <button class="standByBtn" data-player-name="${player.name}">休息</button>` : ''}
+                </li>
+            `);
+            $('#playersList').append($playerItem);
         });
     }
 
@@ -425,19 +490,26 @@ $(document).ready(() => {
             $('#courtsList').append(courtElement);
         });
     
-        // 为每个生成的比赛结束按钮绑定点击事件
         $('.finishGameBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
             GAME.gameFinish(courtId);
-            GAME.nextGame();  // 添加这行代码以在比赛结束后立即进行下一场比赛
+            GAME.nextGame();
             renderCourts();
             renderPlayers();
             saveData();
         });
     }
 
+    $(document).on('click', '.standByBtn', function() {
+        const playerName = $(this).data('player-name');
+        GAME.removeStandBy(playerName);
+        renderPlayers();
+    });
+
     // 初始化畫面
     renderPlayers();
     renderCourts();
     GAME.updateGameHistoryDisplay();
+    GAME.updateStandByDisplay(); // 初始化standBy顯示
+
 });
