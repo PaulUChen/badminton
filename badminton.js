@@ -30,11 +30,11 @@ const GAME = {
             active: true,
             friends: ['A', 'B', 'A'],   // 隊友過
             enemies: ['B', 'C'],        // 對手過
+            rest: true, // 新增rest參數,初始為true,代表休息中
         },
     ]
     */
     players: [],
-    standBy: [], // 新增standBy陣列來存放暫時休息的玩家
     gameHistory: [],
 
     /* 場地
@@ -85,8 +85,10 @@ const GAME = {
             players.forEach(p => p.isPlaying = false);
             // 添加比賽歷程記錄
             var playerNames = players.map(p => p.name).join(', ');
-            this.gameHistory.push(playerNames);
-            this.updateGameHistoryDisplay();
+            if (playerNames) {
+                this.gameHistory.push(playerNames);
+                this.updateGameHistoryDisplay();
+            }
             return players;
         } else {
             console.log('court index error', courtIndex);
@@ -154,9 +156,8 @@ const GAME = {
     find4Players() {
         // 雖然一次只能取出四個人, 但是一開始在撈人數的時候直接看最後會需要幾個人, 讓分組時比較多人進來
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
-        console.log(this.players);
         var players = this.players
-            .filter(p => !p.isPlaying && !this.standBy.includes(p))// 過濾掉正在遊戲中和在standBy中的玩家
+            .filter(p => !p.isPlaying && !p.rest)// 過濾掉正在遊戲中和休息中的玩家
             .reduce((ary, p) => {
                 /* 
                     照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
@@ -236,9 +237,9 @@ const GAME = {
             })
             .sort((a, b) => a.score - b.score)                                  // 分數從小排到大
             .filter((obj, i, a) => obj.score == a[0].score)                    // 找出分數最小的那一群
-            .sort((a, b) => a.totalPlayCount - b.totalPlayCount)               // 遊玩場次從小排到大
+            .sort((a, b) => a.totalPlayCount - b.totalPlayCount)               // 上場場次從小排到大
             // .map((obj, i, a) => { console.log(obj.score, obj.totalPlayCount, obj.twoTeam.map(team => team.map(p => p.name))) ;return obj})
-            .filter((obj, i, a) => obj.totalPlayCount == a[0].totalPlayCount)   // 找出遊玩場次最少的那一群
+            .filter((obj, i, a) => obj.totalPlayCount == a[0].totalPlayCount)   // 找出上場場次最少的那一群
             .map(obj => obj.twoTeam)                                            // 只取資料
             .shuffle()[0]                                                       // 隨機取一組
             .flat();
@@ -257,6 +258,7 @@ const GAME = {
             friends: [],
             enemies: [],
             active: true,
+            rest: true, // 新增玩家時,初始為休息狀態
         }
         this.players.push(player);
         return player;
@@ -275,39 +277,6 @@ const GAME = {
             return player;
         } else {
             console.log(`Player with name ${playerName} not found.`);
-            return null;
-        }
-    },
-
-     /**
-     *  將玩家加入standBy
-     *  @param {String} playerName - 玩家的名字
-     *  @return {Player} - 被加入standBy的玩家資料
-     */
-     addStandBy(playerName) {
-        const player = this.players.find(p => p.name === playerName);
-        if (player) {
-            this.standBy.push(player);
-            return player;
-        } else {
-            alert('球員不存在');
-            console.log(`Player with name ${playerName} not found.`);
-            return null;
-        }
-    },
-
-    /**
-     *  從standBy移除玩家
-     *  @param {String} playerName - 玩家的名字
-     *  @return {Player} - 被移除standBy的玩家資料
-     */
-    removeStandBy(playerName) {
-        const index = GAME.standBy.findIndex(p => p.name === playerName);
-        if (index !== -1) {
-            const player = GAME.standBy.splice(index, 1)[0];
-            return player;
-        } else {
-            console.log(`Player with name ${playerName} not found in standBy.`);
             return null;
         }
     },
@@ -374,16 +343,6 @@ $(document).ready(() => {
         saveData();
     });
 
-    // 新增休息球員按鈕
-    $('#addStandByBtn').on('click', () => {
-        const playerName = prompt('請輸入球員姓名:');
-        if (playerName) {
-            GAME.addStandBy(playerName);
-            renderPlayers();
-            saveData();
-        }
-    });
-
     // 刪除球員按鈕
     $('#removePlayerBtn').on('click', () => {
         const playerName = prompt('請輸入要移除的球員姓名:');
@@ -394,33 +353,12 @@ $(document).ready(() => {
         }
     });
 
-    // 刪除休息球員按鈕
-    // $('#removeStandByBtn').on('click', () => {
-    //     const playerName = prompt('請輸入要移除的球員姓名:');
-    //     if (playerName) {
-    //         GAME.removeStandBy(playerName);
-    //         renderPlayers();
-    //         saveData();
-    //     }
-    // });
-
     // 刪除空場地按鈕
     $('#removeCourtBtn').on('click', () => {
         GAME.removeEmptyCourt();
         renderCourts();
         saveData();
     });
-
-    // 比賽結束按鈕
-    // $('#finishGameBtn').on('click', () => {
-    //     const courtId = parseInt(prompt('請輸入比賽結束的場地編號:'));
-    //     if (!isNaN(courtId)) {
-    //         GAME.gameFinish(courtId);
-    //         renderCourts();
-    //         renderPlayers();
-    //         saveData();
-    //     }
-    // });
 
     // 下一場比賽按鈕
     $('#nextGameBtn').on('click', () => {
@@ -460,11 +398,12 @@ $(document).ready(() => {
     function renderPlayers() {
         $('#playersList').empty();
         GAME.players.forEach((player) => {
-            const isStandBy = GAME.standBy.some(p => p.name === player.name);
             const $playerItem = $(`
                 <li>
-                    ${player.name} (遊玩次數: ${player.playCount})
-                    ${isStandBy ? ` <button class="standByBtn" data-player-name="${player.name}">休息</button>` : ''}
+                    ${player.name} (上場次數: ${player.playCount})
+                    <button class="restBtn" data-player-name="${player.name}">
+                        ${player.rest ? '休息中' : '休息'}
+                    </button>
                 </li>
             `);
             $('#playersList').append($playerItem);
@@ -500,16 +439,20 @@ $(document).ready(() => {
         });
     }
 
-    $(document).on('click', '.standByBtn', function() {
+    $(document).on('click', '.restBtn', function () {
         const playerName = $(this).data('player-name');
-        GAME.removeStandBy(playerName);
-        renderPlayers();
+        const player = GAME.players.find(p => p.name === playerName);
+        if (player) {
+            player.rest = !player.rest;
+            $(this).text(player.rest ? '休息中' : '休息');
+            saveData();
+        }
     });
+
 
     // 初始化畫面
     renderPlayers();
     renderCourts();
     GAME.updateGameHistoryDisplay();
-    GAME.updateStandByDisplay(); // 初始化standBy顯示
 
 });
