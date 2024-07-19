@@ -389,6 +389,28 @@ $(document).ready(() => {
         saveData();
     });
 
+    // 增加上場次數
+    $(document).on('click', '.incrementBtn', function() {
+        const playerName = $(this).data('player-name');
+        const player = GAME.players.find(p => p.name === playerName);
+        if (player) {
+            player.playCount++;
+            $(this).siblings('.playCount').text(player.playCount);
+            saveData();
+        }
+    });
+
+    // 減少上場次數
+    $(document).on('click', '.decrementBtn', function() {
+        const playerName = $(this).data('player-name');
+        const player = GAME.players.find(p => p.name === playerName);
+        if (player && player.playCount > 0) {
+            player.playCount--;
+            $(this).siblings('.playCount').text(player.playCount);
+            saveData();
+        }
+    });
+
     // 儲存資料
     function saveData() {
         localStorage.setItem("model", JSON.stringify(GAME));
@@ -400,8 +422,10 @@ $(document).ready(() => {
         GAME.players.forEach((player) => {
             const $playerItem = $(`
                 <li>
-                    ${player.name} (上場次數: ${player.playCount})
-                    <button class="restBtn" data-player-name="${player.name}">
+                    <button class="decrementBtn" data-player-name="${player.name}">-</button>
+                    ${player.name} (上場次數: <span class="playCount">${player.playCount}</span>)
+                    <button class="incrementBtn" data-player-name="${player.name}">+</button>
+                    <button class="restBtn ${player.rest ? 'resting' : ''}" data-player-name="${player.name}">
                         ${player.rest ? '休息中' : '休息'}
                     </button>
                 </li>
@@ -445,6 +469,7 @@ $(document).ready(() => {
         if (player) {
             player.rest = !player.rest;
             $(this).text(player.rest ? '休息中' : '休息');
+            $(this).toggleClass('resting', player.rest);
             saveData();
         }
     });

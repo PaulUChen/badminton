@@ -147,6 +147,8 @@
             background-color: #FF5722;
             color: white;
             border: none;
+            padding: 5px 10px;
+            font-size: 1em;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
@@ -167,6 +169,13 @@
         }
         .restBtn:hover {
             background-color: rgb(32, 32, 95);
+        }
+        .restBtn.resting {
+            background-color: #808080;
+            cursor: default;
+        }
+        .restBtn.resting:hover {
+            background-color: #808080;
         }
 
         @media (max-width: 600px) {
