@@ -14,42 +14,38 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-size: 1em; /* Base font size */
+        }
+
+        h1, h2, span, p {
+            text-align: center;
+            margin: 0;
+        }
+
+        h1, h2 {
+            color: white;
+            padding: 20px;
         }
 
         h1 {
-            text-align: center;
             background-color: #4CAF50;
-            color: white;
+            font-size: 3em;
+        }
+
+        h2 {
+            background-color: #18711b;
+            font-size: 2em;
+        }
+
+        span, p {
             padding: 20px;
-            margin: 0;
+            font-size: 2em;
         }
 
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            text-decoration: none;
-            margin: 5px;
-        }
-
-        .btn:hover {
-            background-color: #45a049;
-        }
-
-        .btn-group {
-            text-align: center;
-            margin-bottom: 20px;
         }
 
         ul {
@@ -64,6 +60,78 @@
             background-color: #f2f2f2;
             border-radius: 5px;
             text-align: center;
+        }
+
+        /* Button styles */
+        .btn, .sbtn, .finishGameBtn, .assignBtn, .asurranceBtn, .restBtn, .incrementBtn, .decrementBtn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 2em;
+            transition: background-color 0.3s;
+            color: white;
+        }
+
+        .btn-group {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #4CAF50;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .sbtn {
+            background-color: #90d092;
+            font-size: 1.5em;
+        }
+
+        .sbtn:hover {
+            background-color: #7ab77c;
+        }
+
+        .finishGameBtn {
+            background-color: #FF5722;
+        }
+
+        .finishGameBtn:hover {
+            background-color: #E64A19;
+        }
+
+        .assignBtn, .asurranceBtn {
+            background-color: #e8bd48;
+        }
+
+        .assignBtn:hover, .asurranceBtn:hover {
+            background-color: #cfa53b;
+        }
+
+        .restBtn {
+            background-color: rgb(79, 137, 236);
+            font-size: 2.5em;
+            border-radius: 10px;
+        }
+
+        .restBtn:hover {
+            background-color: rgb(32, 32, 95);
+        }
+
+        .restBtn.resting {
+            background-color: #808080;
+            cursor: default;
+        }
+
+        .incrementBtn, .decrementBtn {
+            color: rgb(178, 56, 56);
+            margin: 5px 20px;
+            padding: 5px 20px;
         }
 
         .court {
@@ -87,7 +155,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 1px solid #000;
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            border-radius: 25px;
+            border: solid;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+            transition: background-color 0.3s;
+            font-size: 30px;
         }
 
         .player1 { grid-area: 1 / 1 / 2 / 2; }
@@ -107,9 +182,10 @@
             width: auto;
             margin: 5px 0;
             padding: 5px 10px;
-            font-size: 14px;
+            font-size: 25px;
         }
 
+        /* Dropdown styles */
         .dropdown {
             position: relative;
             display: inline-block;
@@ -139,45 +215,7 @@
             display: block;
         }
 
-        .finishGameBtn {
-            width: auto;
-            margin: 5px 0;
-            padding: 5px 10px;
-            font-size: 14px;
-            background-color: #FF5722;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            font-size: 1em;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .finishGameBtn:hover {
-            background-color: #E64A19;
-        }
-
-        .restBtn {
-            background-color: rgb(79, 137, 236);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 1em;
-            border-radius: 10px;
-        }
-        .restBtn:hover {
-            background-color: rgb(32, 32, 95);
-        }
-        .restBtn.resting {
-            background-color: #808080;
-            cursor: default;
-        }
-        .restBtn.resting:hover {
-            background-color: #808080;
-        }
-
+        /* Media query for small screens */
         @media (max-width: 600px) {
             .btn {
                 display: block;
@@ -193,33 +231,34 @@
             <div class="dropdown">
                 <a href="#" class="btn dropdown-toggle"><i class="fas fa-user"></i> 球員管理</a>
                 <div class="dropdown-content">
-                    <a href="#" id="addPlayerBtn"><i class="fas fa-user-plus"></i> 新增球員</a>
-                    <a href="#" id="removePlayerBtn"><i class="fas fa-user-minus"></i> 移除球員</a>
+                    <a href="#" id="addPlayerBtn" class="sbtn"><i class="fas fa-user-plus"></i> 新增球員</a>
+                    <a href="#" id="removePlayerBtn" class="sbtn"><i class="fas fa-user-minus"></i> 移除球員</a>
                 </div>
             </div>
             
             <div class="dropdown">
                 <a href="#" class="btn dropdown-toggle"><i class="fas fa-volleyball-ball"></i> 場地管理</a>
                 <div class="dropdown-content">
-                    <a href="#" id="addCourtBtn"><i class="fas fa-plus-square"></i> 新增場地</a>
-                    <a href="#" id="removeCourtBtn"><i class="fas fa-minus-square"></i> 移除空場地</a>
+                    <a href="#" id="addCourtBtn" class="sbtn"><i class="fas fa-plus-square"></i> 新增場地</a>
+                    <a href="#" id="removeCourtBtn" class="sbtn"><i class="fas fa-minus-square"></i> 移除空場地</a>
                 </div>
             </div>
             
             <div class="dropdown">
                 <a href="#" class="btn dropdown-toggle"><i class="fas fa-tools"></i> 設定</a>
                 <div class="dropdown-content">
-                    <a href="#" id="resetRecordBtn"><i class="fas fa-sync-alt"></i> 重置所有玩家紀錄</a>
-                    <a href="#" id="resetPeopleBtn"><i class="fas fa-user-times"></i> 清除所有玩家</a>
-                    <a href="#" id="resetCourtBtn"><i class="fas fa-minus-square"></i> 清除所有場地</a>
+                    <a href="#" id="resetRecordBtn" class="sbtn"><i class="fas fa-sync-alt"></i> 重置所有玩家紀錄</a>
+                    <a href="#" id="resetPeopleBtn" class="sbtn"><i class="fas fa-user-times"></i> 清除所有玩家</a>
+                    <a href="#" id="resetCourtBtn" class="sbtn"><i class="fas fa-minus-square"></i> 清除所有場地</a>
                 </div>
             </div>
-            <a href="#" class="btn" id="nextGameBtn"><i class="fas fa-step-forward"></i> 下一場比賽</a>
+            <!-- <a href="#" class="btn" id="nextGameBtn"><i class="fas fa-step-forward"></i> 下一場比賽</a> -->
         </div>
 
         <h2>場地列表</h2>
         <ul id="courtsList"></ul>
 
+        <span></span>
         <h2>球員列表</h2>
         <ul id="playersList"></ul>
 

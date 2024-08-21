@@ -55,6 +55,7 @@ const GAME = {
         var court = {
             id: this.courts.length == 0 ? 0 : (this.courts.sort((a, b) => b.id - a.id)[0].id + 1),
             players: [],
+            status: 0,
         }
         this.courts.push(court)
         return court
@@ -81,6 +82,7 @@ const GAME = {
     gameFinish(id) {
         var court = this.courts.find(c => c.id == id);
         if (court) {
+            court.status = 0;
             var players = court.players.splice(0);
             players.forEach(p => p.isPlaying = false);
             // 添加比賽歷程記錄
@@ -102,7 +104,7 @@ const GAME = {
         // 假設你的玩家列表是顯示在一個 id 為 playerList 的元素中
         $('#playerList').empty();
         this.players.forEach(player => {
-            $('#playerList').append(`<li>${player.name}</li>`);
+            $('#playerList').append(`<li><span>${player.name}</span></li>`);
         });
     },
 
@@ -112,7 +114,7 @@ const GAME = {
     updateGameHistoryDisplay() {
         $('#gameHistoryList').empty();
         this.gameHistory.forEach((record, index) => {
-            $('#gameHistoryList').append(`<li>${index + 1}. ${record}</li>`);
+            $('#gameHistoryList').append(`<li><span>${index + 1}. ${record}</span></li>`);
         });
     },
 
@@ -120,33 +122,59 @@ const GAME = {
      *  下一輪的遊戲
      *  @return {Court[]} - 回傳本來是空的場，現在被補上玩家的那些場地資料array
      */
-    nextGame() {
-        return this.courts
-            .filter(c => c.players.length == 0) // 空的場
-            .filter(court => {                  // 填上玩家的場
-                var freePlayers = this.find4Players();
+    nextGame(courtId = -1) {
+        if(courtId > -1) {
+            const court = this.courts.find(c => c.id === courtId);
+            var freePlayers = this.find4Players();
 
-                // 人不夠
-                if (freePlayers.length == 0) {
-                    return false;
-                }
+            // 人不夠
+            if (freePlayers.length == 0) {
+                return false;
+            }
 
-                court.players.push(...freePlayers)
-                court.players.forEach((p, i, ary) => {
-                    p.isPlaying = true;
-                    p.playCount++;
+            court.players.push(...freePlayers)
+            court.players.forEach((p, i, ary) => {
+                // p.isPlaying = true;
+                // p.playCount++;
 
-                    var friendIndex = [1, 0, 3, 2][i];
-                    p.friends.push(ary[friendIndex].name);
+                var friendIndex = [1, 0, 3, 2][i];
+                p.friends.push(ary[friendIndex].name);
 
-                    var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
-                    p.enemies.push(...enemies)
-                });
-
-                console.log('court', court.id, ', players', court.players);
-
-                return true;
+                var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
+                p.enemies.push(...enemies)
             });
+
+            console.log('court', court.id, ', players', court.players);
+
+            return true;
+        } else {
+            return this.courts
+                .filter(c => c.players.length == 0) // 空的場
+                .filter(court => {                  // 填上玩家的場
+                    var freePlayers = this.find4Players();
+
+                    // 人不夠
+                    if (freePlayers.length == 0) {
+                        return false;
+                    }
+
+                    court.players.push(...freePlayers)
+                    court.players.forEach((p, i, ary) => {
+                        // p.isPlaying = true;
+                        // p.playCount++;
+
+                        var friendIndex = [1, 0, 3, 2][i];
+                        p.friends.push(ary[friendIndex].name);
+
+                        var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
+                        p.enemies.push(...enemies)
+                    });
+
+                    console.log('court', court.id, ', players', court.players);
+
+                    return true;
+                });
+        }
     },
 
     /**
@@ -182,7 +210,6 @@ const GAME = {
 
                 return ary;
             }, [])
-
             // 兩人一隊
         // teams = [[1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [1, 11], ...]
         var teams = getCombinationsBy2(players);
@@ -212,33 +239,14 @@ const GAME = {
             return [];
         }
 
-        // 計算每場比賽的分數, 重複隊友加權遠遠大於重複對手
-        // 隊友重複過, 一場次加 3 分
-        // 對手有打過, 一人次加 1 分
         return twoTeams
             .map(twoTeam => { // twoTeam: [[player1, player2], [player3, player4]]
-                var score = 0;
-
-                // 重複隊友(兩隊都是一個人找另一個人)
-                var friendScore = 3 * twoTeam.reduce((count, [player1, player2], i) => {
-                    return count + player1.friends.filter(f => f == player2.name).length;
-                }, 0);
-
-                // 重複對手(只需第一隊的兩個人分別去第二隊找)
-                var enemyScore = 1 * twoTeam[0].reduce((count, player) => {
-                    return count + player.enemies.filter(e => twoTeam[1].some(p => p.name == e)).length;
-                }, 0);
-
                 return {
                     twoTeam,
-                    score: friendScore + enemyScore,
                     totalPlayCount: twoTeam.flat().reduce((sum, p) => sum + p.playCount, 0),
                 };
             })
-            .sort((a, b) => a.score - b.score)                                  // 分數從小排到大
-            .filter((obj, i, a) => obj.score == a[0].score)                    // 找出分數最小的那一群
             .sort((a, b) => a.totalPlayCount - b.totalPlayCount)               // 上場場次從小排到大
-            // .map((obj, i, a) => { console.log(obj.score, obj.totalPlayCount, obj.twoTeam.map(team => team.map(p => p.name))) ;return obj})
             .filter((obj, i, a) => obj.totalPlayCount == a[0].totalPlayCount)   // 找出上場場次最少的那一群
             .map(obj => obj.twoTeam)                                            // 只取資料
             .shuffle()[0]                                                       // 隨機取一組
@@ -360,14 +368,6 @@ $(document).ready(() => {
         saveData();
     });
 
-    // 下一場比賽按鈕
-    $('#nextGameBtn').on('click', () => {
-        GAME.nextGame();
-        renderCourts();
-        renderPlayers();
-        saveData();
-    });
-
     // 重置所有玩家紀錄按鈕
     $('#resetRecordBtn').on('click', () => {
         GAME.resetRecord();
@@ -423,7 +423,9 @@ $(document).ready(() => {
             const $playerItem = $(`
                 <li>
                     <button class="decrementBtn" data-player-name="${player.name}">-</button>
+                    <span>
                     ${player.name} (上場次數: <span class="playCount">${player.playCount}</span>)
+                    </span>
                     <button class="incrementBtn" data-player-name="${player.name}">+</button>
                     <button class="restBtn ${player.rest ? 'resting' : ''}" data-player-name="${player.name}">
                         ${player.rest ? '休息中' : '休息'}
@@ -442,6 +444,8 @@ $(document).ready(() => {
             const courtElement = $(`
                 <li>
                     <p>場地 ${court.id}</p>
+                    <a class="assignBtn" data-court-id="${court.id}">分隊</a>
+                    <a class="asurranceBtn" data-court-id="${court.id}">確定</a>
                     <div class="court">
                         <div class="court-grid">
                             ${court.players.map((p, i) => `<div class="player player${i + 1}">${p.name}</div>`).join('')}
@@ -455,11 +459,48 @@ $(document).ready(() => {
     
         $('.finishGameBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
-            GAME.gameFinish(courtId);
-            GAME.nextGame();
-            renderCourts();
-            renderPlayers();
-            saveData();
+            var court = GAME.courts.find(c => c.id == courtId);
+
+            if (court.status == 2) {
+                GAME.gameFinish(courtId);
+                renderCourts();
+                renderPlayers();
+                saveData();
+            } else {
+                console.log('請按下確認鍵');
+            }
+        });
+
+        $('.assignBtn').off('click').on('click', function() {
+            const courtId = $(this).data('court-id');
+            var court = GAME.courts.find(c => c.id == courtId);
+            console.log('assign');
+            console.log(court.status);
+            if (court.status < 2) {
+                court.status = 1;
+                var players = court.players.splice(0);
+                players.forEach(p => p.isPlaying = false);
+                GAME.nextGame(courtId);
+                renderCourts();
+                renderPlayers();
+            } else {
+                console.log('已確認隊伍 無法更動');
+            }
+        });
+
+        $('.asurranceBtn').off('click').on('click', function() {
+            const courtId = $(this).data('court-id');
+            const court = GAME.courts.find(c => c.id === courtId);
+            console.log('asurrance');
+            console.log(court.status);
+            if (court.status == 1) {
+                court.status = 2;
+                court.players.forEach(player => {
+                    player.isPlaying = true;
+                    player.playCount++;
+                });
+                saveData();
+            }
         });
     }
 
