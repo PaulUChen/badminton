@@ -325,6 +325,24 @@ const GAME = {
     },
 };
 
+// Function to show the modal
+function showModal(message) {
+    const modal = document.getElementById('customModal');
+    const modalMessage = document.getElementById('modalMessage');
+    modalMessage.textContent = message;
+    modal.style.display = 'block';
+
+    // Automatically hide the modal after 1 second (1000ms)
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 750);
+}
+
+// Function to close the modal
+function closeModal() {
+    document.getElementById('customModal').style.display = 'none';
+}
+
 $(document).ready(() => {
     const model = localStorage.getItem("model")
     if (model) {
@@ -467,7 +485,7 @@ $(document).ready(() => {
                 renderPlayers();
                 saveData();
             } else {
-                console.log('請按下確認鍵');
+                showModal('請按下確認鍵');
             }
         });
 
@@ -484,7 +502,7 @@ $(document).ready(() => {
                 renderCourts();
                 renderPlayers();
             } else {
-                console.log('已確認隊伍 無法更動');
+                showModal('已確認隊伍 無法更動');
             }
         });
 
