@@ -424,7 +424,7 @@ $(document).ready(() => {
                 <li>
                     <button class="decrementBtn" data-player-name="${player.name}">-</button>
                     <span>
-                    ${player.name} (上場次數: <span class="playCount">${player.playCount}</span>)
+                        ${player.name} (上場次數: <a class="playCount">${player.playCount}</a>)
                     </span>
                     <button class="incrementBtn" data-player-name="${player.name}">+</button>
                     <button class="restBtn ${player.rest ? 'resting' : ''}" data-player-name="${player.name}">
