@@ -1,3 +1,9 @@
+const COURT_STATUS = {
+    EMPTY: 0,//空場地
+    ASSIGN: 1,//指派人員中
+    IN_USE: 2//使用中
+};
+
 function getCombinationsBy2(ary) {
     var results = [];
     for (let i = 0; i < ary.length - 1; i++) {
@@ -82,7 +88,7 @@ const GAME = {
     gameFinish(id) {
         var court = this.courts.find(c => c.id == id);
         if (court) {
-            court.status = 0;
+            court.status = COURT_STATUS.EMPTY;
             var players = court.players.splice(0);
             players.forEach(p => p.isPlaying = false);
             // 添加比賽歷程記錄
@@ -184,6 +190,7 @@ const GAME = {
     find4Players() {
         // 雖然一次只能取出四個人, 但是一開始在撈人數的時候直接看最後會需要幾個人, 讓分組時比較多人進來
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
+        console.log(this.players.filter(p => !p.isPlaying));
         var players = this.players
             .filter(p => !p.isPlaying && !p.rest)// 過濾掉正在遊戲中和休息中的玩家
             .reduce((ary, p) => {
@@ -413,7 +420,7 @@ $(document).ready(() => {
         const player = GAME.players.find(p => p.name === playerName);
         if (player) {
             player.playCount++;
-            $(this).siblings('.playCount').text(player.playCount);
+            $(this).siblings('span').find('.playCount').text(player.playCount);
             saveData();
         }
     });
@@ -424,7 +431,7 @@ $(document).ready(() => {
         const player = GAME.players.find(p => p.name === playerName);
         if (player && player.playCount > 0) {
             player.playCount--;
-            $(this).siblings('.playCount').text(player.playCount);
+            $(this).siblings('span').find('.playCount').text(player.playCount);
             saveData();
         }
     });
@@ -463,7 +470,7 @@ $(document).ready(() => {
                 <li>
                     <p>場地 ${court.id}</p>
                     <a class="assignBtn" data-court-id="${court.id}">分隊</a>
-                    <a class="asurranceBtn" data-court-id="${court.id}">確定</a>
+                    <a class="assuranceBtn" data-court-id="${court.id}">確定</a>
                     <div class="court">
                         <div class="court-grid">
                             ${court.players.map((p, i) => `<div class="player player${i + 1}">${p.name}</div>`).join('')}
@@ -479,7 +486,7 @@ $(document).ready(() => {
             const courtId = $(this).data('court-id');
             var court = GAME.courts.find(c => c.id == courtId);
 
-            if (court.status == 2) {
+            if (court.status == COURT_STATUS.IN_USE) {
                 GAME.gameFinish(courtId);
                 renderCourts();
                 renderPlayers();
@@ -492,10 +499,8 @@ $(document).ready(() => {
         $('.assignBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
             var court = GAME.courts.find(c => c.id == courtId);
-            console.log('assign');
-            console.log(court.status);
-            if (court.status < 2) {
-                court.status = 1;
+            if (court.status < COURT_STATUS.IN_USE) {
+                court.status = COURT_STATUS.ASSIGN;// 派遣隊伍中
                 var players = court.players.splice(0);
                 players.forEach(p => p.isPlaying = false);
                 GAME.nextGame(courtId);
@@ -506,17 +511,18 @@ $(document).ready(() => {
             }
         });
 
-        $('.asurranceBtn').off('click').on('click', function() {
+        $('.assuranceBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
             const court = GAME.courts.find(c => c.id === courtId);
-            console.log('asurrance');
-            console.log(court.status);
-            if (court.status == 1) {
-                court.status = 2;
+            if (court.status == COURT_STATUS.ASSIGN) {
+                court.status = COURT_STATUS.IN_USE; // 場地使用中
+                // var players = court.players.splice(0);
                 court.players.forEach(player => {
                     player.isPlaying = true;
                     player.playCount++;
                 });
+                renderCourts();
+                renderPlayers();
                 saveData();
             }
         });
