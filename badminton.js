@@ -188,76 +188,34 @@ const GAME = {
      *  @return {Player[]} - 閒置的玩家
      */
     find4Players() {
-        // 雖然一次只能取出四個人, 但是一開始在撈人數的時候直接看最後會需要幾個人, 讓分組時比較多人進來
-        var courtCount = this.courts.filter(c => c.players.length == 0).length;
-        console.log(this.players);
-        var players = this.players
-            .filter(p => !p.isPlaying && !p.rest && !this.courts.some(c => c.players.includes(p)))// 過濾掉正在遊戲中和休息中的玩家
-            .reduce((ary, p) => {
-                /* 
-                    照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
-                    [
-                        [{玩過0次},{玩過0次}],
-                        ,
-                        [{玩過2次}]
-                        ,
-                        ,
-                        [{玩過5次},{玩過5次},{玩過5次},{玩過5次}],
-                    ]
-                */
-                var index = p.playCount;
-                (ary[index] = ary[index] || []).push(p);
-                return ary;
-            }, [])
-            .reduce((ary, players) => {
-                // 人數不夠就把下一籃的人倒進去
-                if (ary.length < courtCount * 4) {
-                    ary.push(...players)
-                }
+        const courtCount = this.courts.filter(c => c.players.length == 0).length;
+        const availablePlayers = this.players.filter(p => !p.isPlaying && !p.rest && !this.courts.some(c => c.players.includes(p)));
 
-                return ary;
-            }, [])
-            // 兩人一隊
-        // teams = [[1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [1, 11], ...]
-        var teams = getCombinationsBy2(players);
+        const playerBuckets = availablePlayers.reduce((buckets, player) => {
+            (buckets[player.playCount] = buckets[player.playCount] || []).push(player);
+            return buckets;
+        }, []);
 
-        // 兩隊一場比賽
-        // var twoTeams = [
-        //     [[1, 2], [1, 3]],
-        //     [[1, 2], [1, 4]],
-        //     [[1, 2], [1, 5]],
-        //     [[1, 2], [1, 6]], ...
-        // ]
-        var twoTeams = getCombinationsBy2(teams);
-        var t = twoTeams.length
+        const sortedPlayers = playerBuckets.flat().slice(0, courtCount * 4);
+        const teams = getCombinationsBy2(sortedPlayers);
+        const validMatches = getCombinationsBy2(teams).filter(([team1, team2]) => team1.every(p => !team2.includes(p)));
 
-        // 過濾掉兩邊隊伍有重複人的狀況
-        // var twoTeams = [
-        //     [[1, 2], [3, 4]],
-        //     [[1, 2], [3, 5]],
-        //     [[1, 2], [3, 6]],
-        //     [[1, 2], [3, 7]], ...
-        // ];
-        var twoTeams = twoTeams.filter(([team1, team2]) => team1.every(p => !team2.includes(p)))
-
-        console.log(`${players.length}人, ${teams.length}種隊伍, ${twoTeams.length}種比賽可能(未扣除兩邊重複人數前${t})`)
-
-        if (twoTeams.length == 0) {
+        if (validMatches.length === 0) {
             return [];
         }
 
-        return twoTeams
-            .map(twoTeam => { // twoTeam: [[player1, player2], [player3, player4]]
-                return {
-                    twoTeam,
-                    totalPlayCount: twoTeam.flat().reduce((sum, p) => sum + p.playCount, 0),
-                };
-            })
-            .sort((a, b) => a.totalPlayCount - b.totalPlayCount)               // 上場場次從小排到大
-            .filter((obj, i, a) => obj.totalPlayCount == a[0].totalPlayCount)   // 找出上場場次最少的那一群
-            .map(obj => obj.twoTeam)                                            // 只取資料
-            .shuffle()[0]                                                       // 隨機取一組
+        const bestMatches = validMatches
+            .map(match => ({
+                match,
+                totalPlayCount: match.flat().reduce((sum, p) => sum + p.playCount, 0),
+            }))
+            .sort((a, b) => a.totalPlayCount - b.totalPlayCount)
+            .filter((match, _, arr) => match.totalPlayCount === arr[0].totalPlayCount)
+            .map(match => match.match)
+            .shuffle()[0]
             .flat();
+
+        return bestMatches;
     },
 
     /**
