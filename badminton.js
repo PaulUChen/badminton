@@ -190,9 +190,9 @@ const GAME = {
     find4Players() {
         // 雖然一次只能取出四個人, 但是一開始在撈人數的時候直接看最後會需要幾個人, 讓分組時比較多人進來
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
-        console.log(this.players.filter(p => !p.isPlaying));
+        console.log(this.players);
         var players = this.players
-            .filter(p => !p.isPlaying && !p.rest)// 過濾掉正在遊戲中和休息中的玩家
+            .filter(p => !p.isPlaying && !p.rest && !this.courts.some(c => c.players.includes(p)))// 過濾掉正在遊戲中和休息中的玩家
             .reduce((ary, p) => {
                 /* 
                     照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
