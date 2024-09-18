@@ -99,7 +99,7 @@ const GAME = {
             }
             return players;
         } else {
-            console.log('court index error', courtIndex);
+            console.log('court index error', id);
             return [];
         }
     },
