@@ -1,7 +1,13 @@
 const COURT_STATUS = {
-    EMPTY: 0,//空場地
-    ASSIGN: 1,//指派人員中
-    IN_USE: 2//使用中
+    EMPTY: 1,//空場地
+    ASSIGN: 2,//指派人員中
+    IN_USE: 3//使用中
+};
+
+const PLAYER_STATUS = {
+    REST: 1,//休息中
+    WAIT: 2,//等待上場
+    PLAY: 3//比賽中
 };
 
 function getCombinationsBy2(ary) {
@@ -90,7 +96,7 @@ const GAME = {
         if (court) {
             court.status = COURT_STATUS.EMPTY;
             var players = court.players.splice(0);
-            players.forEach(p => p.isPlaying = false);
+            players.forEach(p => p.status = PLAYER_STATUS.WAIT);
             // 添加比賽歷程記錄
             var playerNames = players.map(p => p.name).join(', ');
             if (playerNames) {
@@ -140,9 +146,6 @@ const GAME = {
 
             court.players.push(...freePlayers)
             court.players.forEach((p, i, ary) => {
-                // p.isPlaying = true;
-                // p.playCount++;
-
                 var friendIndex = [1, 0, 3, 2][i];
                 p.friends.push(ary[friendIndex].name);
 
@@ -166,9 +169,6 @@ const GAME = {
 
                     court.players.push(...freePlayers)
                     court.players.forEach((p, i, ary) => {
-                        // p.isPlaying = true;
-                        // p.playCount++;
-
                         var friendIndex = [1, 0, 3, 2][i];
                         p.friends.push(ary[friendIndex].name);
 
@@ -192,7 +192,7 @@ const GAME = {
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
         console.log(this.players);
         var players = this.players
-            .filter(p => !p.isPlaying && !p.rest && !this.courts.some(c => c.players.includes(p)))// 過濾掉正在遊戲中和休息中的玩家
+            .filter(p => p.status == PLAYER_STATUS.WAIT && !this.courts.some(c => c.players.includes(p)))// ?? 過濾掉正在遊戲中和休息中的玩家
             .reduce((ary, p) => {
                 /* 
                     照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
@@ -269,11 +269,11 @@ const GAME = {
         var player = {
             name: playerName,
             playCount: 0,
-            isPlaying: false,
+            status: PLAYER_STATUS.REST,
+            // isPlaying: false,
             friends: [],
             enemies: [],
-            active: true,
-            rest: true, // 新增玩家時,初始為休息狀態
+            // rest: true, // 新增玩家時,初始為休息狀態
         }
         this.players.push(player);
         return player;
@@ -304,7 +304,7 @@ const GAME = {
             player.playCount = 0;
             player.friends = [];
             player.enemies = [];
-            player.isPlaying = false;
+            player.status = PLAYER_STATUS.REST;
         });
         this.gameHistory = [];
         this.updateGameHistoryDisplay();
@@ -452,8 +452,8 @@ $(document).ready(() => {
                         ${player.name} (上場次數: <a class="playCount">${player.playCount}</a>)
                     </span>
                     <button class="incrementBtn" data-player-name="${player.name}">+</button>
-                    <button class="restBtn ${player.rest ? 'resting' : ''}" data-player-name="${player.name}">
-                        ${player.rest ? '休息中' : '休息'}
+                    <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-name="${player.name}">
+                        ${player.status == PLAYER_STATUS.REST ? '休息中' : '休息'}
                     </button>
                 </li>
             `);
@@ -496,13 +496,14 @@ $(document).ready(() => {
             }
         });
 
+        //分隊
         $('.assignBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
             var court = GAME.courts.find(c => c.id == courtId);
             if (court.status < COURT_STATUS.IN_USE) {
                 court.status = COURT_STATUS.ASSIGN;// 派遣隊伍中
                 var players = court.players.splice(0);
-                players.forEach(p => p.isPlaying = false);
+                // players.forEach(p => p.isPlaying = false);
                 GAME.nextGame(courtId);
                 renderCourts();
                 renderPlayers();
@@ -511,6 +512,7 @@ $(document).ready(() => {
             }
         });
 
+        //確認隊伍
         $('.assuranceBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
             const court = GAME.courts.find(c => c.id === courtId);
@@ -518,7 +520,7 @@ $(document).ready(() => {
                 court.status = COURT_STATUS.IN_USE; // 場地使用中
                 // var players = court.players.splice(0);
                 court.players.forEach(player => {
-                    player.isPlaying = true;
+                    player.status = PLAYER_STATUS.PLAY;
                     player.playCount++;
                 });
                 renderCourts();
@@ -531,12 +533,19 @@ $(document).ready(() => {
     $(document).on('click', '.restBtn', function () {
         const playerName = $(this).data('player-name');
         const player = GAME.players.find(p => p.name === playerName);
-        if (player) {
-            player.rest = !player.rest;
-            $(this).text(player.rest ? '休息中' : '休息');
-            $(this).toggleClass('resting', player.rest);
-            saveData();
+        if (player.status == PLAYER_STATUS.REST) {
+            player.status = PLAYER_STATUS.WAIT;
+            $(this).text('休息');
+            $(this).toggleClass('resting', player.status);
+        } else if (player.status == PLAYER_STATUS.WAIT) {
+            player.status = PLAYER_STATUS.REST;
+            $(this).text('休息中');
+            $(this).toggleClass('resting', player.status);
+        } else {
+            alert('比賽中無法更動狀態');
+            return;
         }
+        saveData();
     });
 
 
