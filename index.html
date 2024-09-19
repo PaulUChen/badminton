@@ -288,6 +288,26 @@
                 margin: 10px auto;
             }
         }
+
+        .pony {
+            width: 300px;
+            height: 300px;
+            background: url('pony.gif') no-repeat center center;
+            background-size: contain;
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            /* animation: movePony 5s linear infinite; */
+        }
+
+        @keyframes movePony {
+            0% {
+                left: -150px;
+            }
+            100% {
+                left: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -323,6 +343,7 @@
 
         <h2>場地列表</h2>
         <ul id="courtsList"></ul>
+        <div class="pony"></div>
 
         <span></span>
         <h2>球員列表</h2>
@@ -339,3 +360,58 @@
     </div>
 </body>
 </html>
+<script>
+    const pony = document.querySelector('.pony');
+    let posX = 50;
+    let posY = 50;
+    let baseSpeedX = (Math.random() - 0.5) * 10; // 隨機 X 方向基本速度
+    let baseSpeedY = (Math.random() - 0.5) * 10; // 隨機 Y 方向基本速度
+    let speedX = baseSpeedX;
+    let speedY = baseSpeedY;
+    let accelerated = false; // 是否加速
+
+    function movePony() {
+        // 更新位置
+        posX += speedX;
+        posY += speedY;
+
+        // 檢查邊界，碰到邊界則反彈
+        if (posX <= 0 || posX + pony.clientWidth >= window.innerWidth) {
+            speedX = -speedX; // 反彈
+        }
+        if (posY <= 0 || posY + pony.clientHeight >= window.innerHeight) {
+            speedY = -speedY; // 反彈
+        }
+
+        // 更新小馬的位置
+        pony.style.left = posX + 'px';
+        pony.style.top = posY + 'px';
+
+        // 重複執行
+        requestAnimationFrame(movePony);
+    }
+
+    // 當滑鼠點擊或碰到小馬時加速
+    function acceleratePony() {
+        if (!accelerated) {
+            accelerated = true;
+            // 增加速度
+            speedX *= 5;
+            speedY *= 5;
+
+            // 設定 1 秒後恢復原來速度
+            setTimeout(() => {
+                speedX = baseSpeedX;
+                speedY = baseSpeedY;
+                accelerated = false;
+            }, 1000);
+        }
+    }
+
+    // 監聽滑鼠碰到或點擊小馬事件
+    pony.addEventListener('mouseenter', acceleratePony);
+    pony.addEventListener('click', acceleratePony);
+
+    // 開始移動
+    movePony();
+</script>
