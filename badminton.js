@@ -46,6 +46,7 @@ const GAME = {
         },
     ]
     */
+    playerId: 1,
     players: [],
     gameHistory: [],
 
@@ -266,15 +267,19 @@ const GAME = {
      *  @return {Player} - 加入的玩家資料
      */
     addPlayer(playerName) {
+        if (this.players.find(p => p.name == playerName)) {
+            alert('名稱重複');
+            return;
+        }
         var player = {
+            id: this.playerId,
             name: playerName,
             playCount: 0,
             status: PLAYER_STATUS.REST,
-            // isPlaying: false,
             friends: [],
             enemies: [],
-            // rest: true, // 新增玩家時,初始為休息狀態
         }
+        this.playerId++;
         this.players.push(player);
         return player;
     },
@@ -289,10 +294,10 @@ const GAME = {
         if (playerIndex !== -1) {
             var player = this.players.splice(playerIndex, 1)[0];
             this.updatePlayerListDisplay();
-            return player;
+            return true;
         } else {
             console.log(`Player with name ${playerName} not found.`);
-            return null;
+            return false;
         }
     },
 
@@ -331,24 +336,6 @@ const GAME = {
         console.log(JSON.stringify(this, null, 4));
     },
 };
-
-// Function to show the modal
-function showModal(message) {
-    const modal = document.getElementById('customModal');
-    const modalMessage = document.getElementById('modalMessage');
-    modalMessage.textContent = message;
-    modal.style.display = 'block';
-
-    // Automatically hide the modal after 1 second (1000ms)
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 750);
-}
-
-// Function to close the modal
-function closeModal() {
-    document.getElementById('customModal').style.display = 'none';
-}
 
 $(document).ready(() => {
     const model = localStorage.getItem("model")
@@ -455,6 +442,8 @@ $(document).ready(() => {
                     <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-name="${player.name}">
                         ${player.status == PLAYER_STATUS.REST ? '休息中' : '休息'}
                     </button>
+                    <button class="deleteBtn" data-player-name="${player.name}"> 刪除 </button>
+                    <button class="cleanBtn" data-player-name="${player.name}"> 重置狀態 </button>
                 </li>
             `);
             $('#playersList').append($playerItem);
@@ -492,7 +481,7 @@ $(document).ready(() => {
                 renderPlayers();
                 saveData();
             } else {
-                showModal('請按下確認鍵');
+                alert('請按下確認鍵');
             }
         });
 
@@ -508,7 +497,7 @@ $(document).ready(() => {
                 renderCourts();
                 renderPlayers();
             } else {
-                showModal('已確認隊伍 無法更動');
+                alert('已確認隊伍 無法更動');
             }
         });
 
@@ -516,7 +505,7 @@ $(document).ready(() => {
         $('.assuranceBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
             const court = GAME.courts.find(c => c.id === courtId);
-            if (court.status == COURT_STATUS.ASSIGN) {
+            if (court.status == COURT_STATUS.ASSIGN && court.players.length == 4) {
                 court.status = COURT_STATUS.IN_USE; // 場地使用中
                 // var players = court.players.splice(0);
                 court.players.forEach(player => {
@@ -526,6 +515,8 @@ $(document).ready(() => {
                 renderCourts();
                 renderPlayers();
                 saveData();
+            } else {
+                alert('未滿四個人，無法組成隊伍');
             }
         });
     }
@@ -548,6 +539,32 @@ $(document).ready(() => {
         saveData();
     });
 
+    $(document).on('click', '.deleteBtn', function () {
+        const playerName = $(this).data('player-name');
+        const player = GAME.players.find(p => p.name === playerName);
+        if (player.status == PLAYER_STATUS.REST || player.status == PLAYER_STATUS.WAIT) {
+            if(confirm('確定要刪除' + playerName + '?')) {
+                if(GAME.removePlayer(playerName)) {
+                    renderPlayers();
+                    saveData();        
+                } else {
+                    alert('刪除發生問題');
+                }
+            }
+        } else {
+            alert('比賽進行中，目前無法刪除');
+            return;
+        }
+        saveData();
+    });
+
+    $(document).on('click', '.cleanBtn', function () {
+        const playerName = $(this).data('player-name');
+        const player = GAME.players.find(p => p.name === playerName);
+        player.status = PLAYER_STATUS.REST;
+        renderPlayers();
+        saveData();        
+    });
 
     // 初始化畫面
     renderPlayers();
