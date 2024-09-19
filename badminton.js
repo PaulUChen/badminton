@@ -516,7 +516,11 @@ $(document).ready(() => {
                 renderPlayers();
                 saveData();
             } else {
-                alert('未滿四個人，無法組成隊伍');
+                if (court.players.length < 4) {
+                    alert('未滿四個人，無法組成隊伍');
+                } else {
+                    alert('已確認');
+                }
             }
         });
     }

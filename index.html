@@ -290,8 +290,8 @@
         }
 
         .pony {
-            width: 300px;
-            height: 300px;
+            width: 50px;
+            height: 50px;
             background: url('pony.gif') no-repeat center center;
             background-size: contain;
             position: absolute;
@@ -396,15 +396,15 @@
         if (!accelerated) {
             accelerated = true;
             // 增加速度
-            speedX *= 5;
-            speedY *= 5;
+            speedX *= 500;
+            speedY *= 500;
 
             // 設定 1 秒後恢復原來速度
             setTimeout(() => {
                 speedX = baseSpeedX;
                 speedY = baseSpeedY;
                 accelerated = false;
-            }, 1000);
+            }, 2000);
         }
     }
 
