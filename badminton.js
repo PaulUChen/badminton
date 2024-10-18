@@ -138,7 +138,7 @@ const GAME = {
     nextGame(courtId = -1) {
         if(courtId > -1) {
             const court = this.courts.find(c => c.id === courtId);
-            var freePlayers = this.find4Players_people();
+            var freePlayers = this.find4Players_team();
 
             // 人不夠
             if (freePlayers.length == 0) {
@@ -161,7 +161,7 @@ const GAME = {
             return this.courts
                 .filter(c => c.players.length == 0) // 空的場
                 .filter(court => {                  // 填上玩家的場
-                    var freePlayers = this.find4Players_people();
+                    var freePlayers = this.find4Players_team();
 
                     // 人不夠
                     if (freePlayers.length == 0) {
