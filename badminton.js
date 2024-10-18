@@ -1,13 +1,13 @@
 const COURT_STATUS = {
-    EMPTY: 1,//空場地
-    ASSIGN: 2,//指派人員中
-    IN_USE: 3//使用中
+    EMPTY: 1,       // 空場地
+    ASSIGN: 2,      // 指派人員中
+    IN_USE: 3       // 使用中
 };
 
 const PLAYER_STATUS = {
-    REST: 1,//休息中
-    WAIT: 2,//等待上場
-    PLAY: 3//比賽中
+    REST: 1,        // 休息中
+    WAIT: 2,        // 等待上場
+    PLAY: 3         // 比賽中
 };
 
 function getCombinationsBy2(ary) {
@@ -218,47 +218,51 @@ const GAME = {
 
                 return ary;
             }, [])
-            // 兩人一隊
-        // teams = [[1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [1, 11], ...]
-        var teams = getCombinationsBy2(players);
+            
+        // 兩人一隊分法
+        // {
+        //     // teams = [[1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [1, 11], ...]
+        //     var teams = getCombinationsBy2(players);
+    
+        //     // 兩隊一場比賽
+        //     // var twoTeams = [[[1, 2], [1, 3]],[[1, 2], [1, 4]],[[1, 2], [1, 5]],[[1, 2], [1, 6]], ...]
+        //     var twoTeams = getCombinationsBy2(teams);
+        //     var t = twoTeams.length
+    
+        //     // 過濾掉兩邊隊伍有重複人的狀況
+        //     // var twoTeams = [[[1, 2], [3, 4]],[[1, 2], [3, 5]],[[1, 2], [3, 6]],[[1, 2], [3, 7]], ...];
+        //     var twoTeams = twoTeams.filter(([team1, team2]) => team1.every(p => !team2.includes(p)))
+    
+        //     console.log(`${players.length}人, ${teams.length}種隊伍, ${twoTeams.length}種比賽可能(未扣除兩邊重複人數前${t})`)
+    
+        //     if (twoTeams.length == 0) {
+        //         return [];
+        //     }
+    
+        //     return twoTeams
+        //         .map(twoTeam => { // twoTeam: [[player1, player2], [player3, player4]]
+        //             return {
+        //                 twoTeam,
+        //                 totalPlayCount: twoTeam.flat().reduce((sum, p) => sum + p.playCount, 0),
+        //             };
+        //         })
+        //         .sort((a, b) => a.totalPlayCount - b.totalPlayCount)               // 上場場次從小排到大
+        //         .filter((obj, i, a) => obj.totalPlayCount == a[0].totalPlayCount)   // 找出上場場次最少的那一群
+        //         .map(obj => obj.twoTeam)                                            // 只取資料
+        //         .shuffle()[0]                                                       // 隨機取一組
+        //         .flat(); 
+        // }
 
-        // 兩隊一場比賽
-        // var twoTeams = [
-        //     [[1, 2], [1, 3]],
-        //     [[1, 2], [1, 4]],
-        //     [[1, 2], [1, 5]],
-        //     [[1, 2], [1, 6]], ...
-        // ]
-        var twoTeams = getCombinationsBy2(teams);
-        var t = twoTeams.length
+        // 可上場隨機抓四人分法
+        {
+            // 小於四人傳空[]
+            if(players.length < 4)
+                return [];
 
-        // 過濾掉兩邊隊伍有重複人的狀況
-        // var twoTeams = [
-        //     [[1, 2], [3, 4]],
-        //     [[1, 2], [3, 5]],
-        //     [[1, 2], [3, 6]],
-        //     [[1, 2], [3, 7]], ...
-        // ];
-        var twoTeams = twoTeams.filter(([team1, team2]) => team1.every(p => !team2.includes(p)))
-
-        console.log(`${players.length}人, ${teams.length}種隊伍, ${twoTeams.length}種比賽可能(未扣除兩邊重複人數前${t})`)
-
-        if (twoTeams.length == 0) {
-            return [];
+            return players
+                .shuffle()
+                .slice(0, 4);
         }
-
-        return twoTeams
-            .map(twoTeam => { // twoTeam: [[player1, player2], [player3, player4]]
-                return {
-                    twoTeam,
-                    totalPlayCount: twoTeam.flat().reduce((sum, p) => sum + p.playCount, 0),
-                };
-            })
-            .sort((a, b) => a.totalPlayCount - b.totalPlayCount)               // 上場場次從小排到大
-            .filter((obj, i, a) => obj.totalPlayCount == a[0].totalPlayCount)   // 找出上場場次最少的那一群
-            .map(obj => obj.twoTeam)                                            // 只取資料
-            .shuffle()[0]                                                       // 隨機取一組
-            .flat();
     },
 
     /**
