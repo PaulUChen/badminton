@@ -5,7 +5,7 @@ const COURT_STATUS = {
 };
 
 const PLAYER_STATUS = {
-    REST: 1,        // 休息中
+    REST: 1,        // 不排場
     WAIT: 2,        // 等待上場
     PLAY: 3         // 比賽中
 };
@@ -42,7 +42,7 @@ const GAME = {
             active: true,
             friends: ['A', 'B', 'A'],   // 隊友過
             enemies: ['B', 'C'],        // 對手過
-            rest: true, // 新增rest參數,初始為true,代表休息中
+            rest: true, // 新增rest參數,初始為true,代表不排場
         },
     ]
     */
@@ -66,9 +66,10 @@ const GAME = {
      */
     addCourt() {
         var court = {
-            id: this.courts.length == 0 ? 0 : (this.courts.sort((a, b) => b.id - a.id)[0].id + 1),
+            id: this.courts.length == 0 ? 1 : (this.courts.sort((a, b) => b.id - a.id)[0].id + 1),
             players: [],
             status: 0,
+            courtName: String.fromCharCode(65 + this.courts.length) // 使用字母A, B, C, ...
         }
         this.courts.push(court)
         return court
@@ -193,7 +194,7 @@ const GAME = {
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
         console.log(this.players);
         var players = this.players
-            .filter(p => p.status == PLAYER_STATUS.WAIT && !this.courts.some(c => c.players.includes(p)))// ?? 過濾掉正在遊戲中和休息中的玩家
+            .filter(p => p.status == PLAYER_STATUS.WAIT && !this.courts.some(c => c.players.includes(p)))// ?? 過濾掉正在遊戲中和不排場的玩家
             .reduce((ary, p) => {
             /* 
                 照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
@@ -260,7 +261,7 @@ const GAME = {
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
         console.log(this.players);
         var players = this.players
-            .filter(p => p.status == PLAYER_STATUS.WAIT && !this.courts.some(c => c.players.includes(p)))   // ?? 過濾掉正在遊戲中和休息中的玩家
+            .filter(p => p.status == PLAYER_STATUS.WAIT && !this.courts.some(c => c.players.includes(p)))   // ?? 過濾掉正在遊戲中和不排場的玩家
             .reduce((ary, p) => {
                 /* 
                     照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
@@ -487,7 +488,7 @@ $(document).ready(() => {
                     </span>
                     <button class="incrementBtn" data-player-name="${player.name}">+</button>
                     <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-name="${player.name}">
-                        ${player.status == PLAYER_STATUS.REST ? '休息中' : '休息'}
+                        ${player.status == PLAYER_STATUS.REST ? '不排場' : '休息'}
                     </button>
                     <button class="deleteBtn" data-player-name="${player.name}"> 刪除 </button>
                     <button class="cleanBtn" data-player-name="${player.name}"> 重置狀態 </button>
@@ -500,11 +501,19 @@ $(document).ready(() => {
     // 繪製場地
     function renderCourts() {
         $('#courtsList').empty();
-        GAME.courts.forEach((court) => {
+        const sortedCourts = GAME.courts.sort((a, b) => a.courtName.localeCompare(b.courtName));
+        sortedCourts.forEach((court) => {
             const playerNames = court.players.map((p) => p.name).join(', ');
-            const courtElement = $(`
-                <li>
-                    <p>場地 ${court.id}</p>
+            // 根据 courtName 分配颜色类
+        let courtClass = '';
+        if (court.id > 5) {
+            courtClass = 'court-random'; // 随机颜色
+        } else {
+            courtClass = 'court-' + court.courtName;
+        }
+        const courtElement = $(`
+                <li class="${courtClass}">
+                    <p>${court.courtName} (場地 ${court.id})</p>
                     <a class="assignBtn" data-court-id="${court.id}">分隊</a>
                     <a class="assuranceBtn" data-court-id="${court.id}">確定</a>
                     <div class="court">
@@ -581,7 +590,7 @@ $(document).ready(() => {
             $(this).toggleClass('resting', player.status);
         } else if (player.status == PLAYER_STATUS.WAIT) {
             player.status = PLAYER_STATUS.REST;
-            $(this).text('休息中');
+            $(this).text('不排場');
             $(this).toggleClass('resting', player.status);
         } else {
             alert('比賽中無法更動狀態');
