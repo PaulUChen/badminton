@@ -174,13 +174,29 @@
             justify-content: center;
             align-items: center;
             background-color: #007bff;
-            color: white;
+            color: black;
             font-weight: bold;
             border-radius: 25px;
             border: solid;
             box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
             transition: background-color 0.3s;
             font-size: 30px;
+        }
+
+        .player-background-1 {
+            background-color: #a8d5ba; /* 暖绿色 */
+        }
+
+        .player-background-2 {
+            background-color: #f7e08c; /* 暖黄色 */
+        }
+
+        .player-background-3 {
+            background-color: #f5a3a3; /* 暖红色 */
+        }
+
+        .player-background-4 {
+            background-color: #a3c4f5; /* 暖蓝色 */
         }
 
         .player1 { grid-area: 1 / 1 / 2 / 2; }
@@ -283,7 +299,17 @@
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             animation: fadeIn 0.3s; /* Smooth fade-in effect */
         }
-
+        #addPlayerModal .modal-content input[type="text"],
+        #addPlayerModal .modal-content select,
+        #addPlayerModal .modal-content button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 18px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
         /* Close button */
         .close-btn {
             color: #aaa;
@@ -380,6 +406,20 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">OK</span>
             <span id="modalMessage"></span>
+        </div>
+    </div>
+    <div id="addPlayerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddPlayerModal()">×</span>
+            <h2>新增球員</h2>
+            <input type="text" id="playerNameInput" placeholder="請輸入球員姓名">
+            <select id="playerLevelSelect">
+                <option value="1">綠色</option>
+                <option value="2">黃色</option>
+                <option value="3">紅色</option>
+                <option value="4">藍色</option>
+            </select>
+            <button id="confirmAddPlayerBtn">確定</button>
         </div>
     </div>
 </body>

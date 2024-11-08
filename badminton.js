@@ -10,6 +10,13 @@ const PLAYER_STATUS = {
     PLAY: 3         // 比賽中
 };
 
+const LEVEL = {
+    GREEN: 1,
+    YELLOW: 2,
+    RED: 3,
+    BLUE: 4,
+}
+
 function getCombinationsBy2(ary) {
     var results = [];
     for (let i = 0; i < ary.length - 1; i++) {
@@ -314,7 +321,7 @@ const GAME = {
      *  @param {String} playerName - 玩家的名字
      *  @return {Player} - 加入的玩家資料
      */
-    addPlayer(playerName) {
+    addPlayer(playerName, playerLevel) {
         if (this.players.find(p => p.name == playerName)) {
             alert('名稱重複');
             return;
@@ -326,6 +333,7 @@ const GAME = {
             status: PLAYER_STATUS.REST,
             friends: [],
             enemies: [],
+            level: playerLevel,// 1: 綠色, 2: 黃色, 3: 紅色, 4: 藍色
         }
         this.playerId++;
         this.players.push(player);
@@ -394,13 +402,27 @@ $(document).ready(() => {
         GAME.gameHistory = data.gameHistory;
     }
 
-    // 新增球員按鈕
     $('#addPlayerBtn').on('click', () => {
-        const playerName = prompt('請輸入球員姓名:');
-        if (playerName) {
-            GAME.addPlayer(playerName);
+        $('#playerNameInput').val('');
+        $('#playerLevelSelect').val('1');
+        $('#addPlayerModal').show();
+    });
+
+    window.closeAddPlayerModal = function() {
+        $('#addPlayerModal').hide();
+    };
+
+    // 确定新增球员
+    $('#confirmAddPlayerBtn').on('click', () => {
+        const playerName = $('#playerNameInput').val();
+        const playerLevel = $('#playerLevelSelect').val();
+        if (playerName && playerLevel) {
+            GAME.addPlayer(playerName, parseInt(playerLevel));
             renderPlayers();
             saveData();
+            closeAddPlayerModal();
+        } else {
+            alert('請輸入球員姓名並選擇分級');
         }
     });
 
@@ -481,7 +503,7 @@ $(document).ready(() => {
         $('#playersList').empty();
         GAME.players.forEach((player) => {
             const $playerItem = $(`
-                <li>
+                <li class="player-background-${player.level}">
                     <button class="decrementBtn" data-player-name="${player.name}">-</button>
                     <span>
                         ${player.name} (上場次數: <a class="playCount">${player.playCount}</a>)
@@ -518,7 +540,7 @@ $(document).ready(() => {
                     <a class="assuranceBtn" data-court-id="${court.id}">確定</a>
                     <div class="court">
                         <div class="court-grid">
-                            ${court.players.map((p, i) => `<div class="player player${i + 1}">${p.name}</div>`).join('')}
+                            ${court.players.map((p, i) => `<div class="player player${i + 1} player-background-${p.level}">${p.name}</div>`).join('')}
                         </div>
                         <a class="finishGameBtn" data-court-id="${court.id}">比賽結束</a>
                     </div>
