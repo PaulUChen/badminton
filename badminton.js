@@ -260,63 +260,6 @@ const GAME = {
     },
 
     /**
-     *  找閒置的玩家, 依玩過的場次少到多排序, 同樣場次玩家會按照隊友對手次數積分來排行
-     *  @return {Player[]} - 閒置的玩家
-     */
-    find4Players_people() {
-        // 雖然一次只能取出四個人, 但是一開始在撈人數的時候直接看最後會需要幾個人, 讓分組時比較多人進來
-        var courtCount = this.courts.filter(c => c.players.length == 0).length;
-        console.log(this.players);
-        var players = this.players
-            .filter(p => p.status == PLAYER_STATUS.WAIT && !this.courts.some(c => c.players.includes(p)))   // ?? 過濾掉正在遊戲中和不排場的玩家
-            .reduce((ary, p) => {
-                /* 
-                    照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
-                    [
-                        [{玩過0次},{玩過0次}],
-                        ,
-                        [{玩過2次}]
-                        ,
-                        ,
-                        [{玩過5次},{玩過5次},{玩過5次},{玩過5次}],
-                    ]
-                */
-                var index = p.playCount;
-                (ary[index] = ary[index] || []).push(p);
-                return ary;
-            }, [])
-            .reduce((ary, players) => {
-                // 人數不夠就把下一籃的人倒進去
-                if (ary.length < courtCount * 4) {
-                    // 判斷是否會塞爆
-                    var leftNumber = players.length + ary.length - (courtCount * 4);
-                    if(leftNumber > 0) {
-                        // 塞爆隨機抓人
-                        var playerTeam = players
-                        .shuffle()
-                        .slice(0, leftNumber);
-
-                        ary.push(...playerTeam);
-                    } else {
-                        // 沒塞爆直接放入，一定讓最少場次的先玩
-                        ary.push(...players);
-                    }
-                }
-
-                return ary;
-            }, [])
-            
-        // 可上場隨機抓四人分法
-        {
-            // 小於四人傳空[]
-            if(players.length < 4)
-                return [];
-
-            return players;
-        }
-    },
-
-    /**
      *  加玩家
      *  @param {String} playerName - 玩家的名字
      *  @return {Player} - 加入的玩家資料
