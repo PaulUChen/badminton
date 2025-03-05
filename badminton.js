@@ -497,10 +497,12 @@ $(document).ready(() => {
             var court = GAME.courts.find(c => c.id == courtId);
 
             if (court.status == COURT_STATUS.IN_USE) {
-                GAME.gameFinish(courtId);
-                renderCourts();
-                renderPlayers();
-                saveData();
+                if(confirm('確定要結束比賽? 請確認點擊正確')) {
+                    GAME.gameFinish(courtId);
+                    renderCourts();
+                    renderPlayers();
+                    saveData();
+                }
             } else {
                 alert('請按下確認鍵');
             }
