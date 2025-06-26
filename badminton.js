@@ -352,9 +352,8 @@ const GAME = {
                 if (columns.length >= 3) {
                     const name = columns[0].trim().replace(/"/g, ''); // 移除引號
                     const status = columns[2].trim().replace(/"/g, ''); // C 欄位是狀態
-                    
-                    // 如果狀態不是"備取"，則匯入該球員
-                    if (status !== '備取' && name) {
+                    // 如果狀態不是"候補"，則匯入該球員
+                    if (status !== '候補' && name) {
                         // 檢查是否已存在相同姓名的球員
                         if (!this.players.find(p => p.name === name)) {
                             const player = this.addPlayer(name, 1); // 預設為綠色等級
@@ -419,50 +418,6 @@ const GAME = {
     },
 
     /**
-     *  從 Google Sheet 匯入球員
-     *  @param {String} sheetTabName - Google Sheet 頁籤名稱
-     *  @return {Promise} - 匯入結果
-     */
-    async importPlayersFromSheet(sheetTabName) {
-        const sheetId = '1kYYwQ6u0vQf4uglG9GMUmq-KEbhq5FUKRpz8WeCLCqE';
-        // 使用更簡單的 CSV 匯出 URL
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=${encodeURIComponent(sheetTabName)}`;
-        
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                mode: 'no-cors', // 嘗試使用 no-cors 模式
-                headers: {
-                    'Accept': 'text/csv,text/plain,*/*'
-                }
-            });
-            
-            if (!response.ok && response.status !== 0) { // no-cors 模式下 status 可能是 0
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const csvText = await response.text();
-            
-            // 檢查回應是否包含錯誤訊息
-            if (csvText.includes('error') || csvText.includes('Error') || csvText.includes('403')) {
-                throw new Error('無法存取 Google Sheet，請確認檔案已設為公開或使用手動 CSV 匯入');
-            }
-            
-            // 使用 CSV 匯入方法處理資料
-            return this.importPlayersFromCSV(csvText);
-            
-        } catch (error) {
-            console.error('匯入球員時發生錯誤:', error);
-            
-            // 提供更詳細的錯誤訊息和解決方案
-            return {
-                success: false,
-                error: `無法從 Google Sheet 匯入資料：${error.message}\n\n建議解決方案：\n1. 確認 Google Sheet 已設為公開\n2. 使用手動 CSV 匯入功能\n3. 複製 Google Sheet 資料並貼到 CSV 輸入框`
-            };
-        }
-    },
-
-    /**
      *  透過 Google Apps Script 從 Google Sheet 匯入球員
      *  @param {String} sheetTabName - Google Sheet 頁籤名稱
      *  @param {String} scriptUrl - Google Apps Script Web App URL
@@ -493,7 +448,9 @@ const GAME = {
             for (let playerData of result.data) {
                 let name = playerData.name;
                 let status = playerData.status;
-                
+                if (status == '候補') {
+                    continue;
+                }
                 // 檢查是否已存在相同姓名的球員
                 if (!this.players.find(p => p.name === name)) {
                     let player = this.addPlayer(name, 1); // 預設為綠色等級
