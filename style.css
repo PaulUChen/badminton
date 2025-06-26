@@ -1,12 +1,11 @@
-/* index.html 和 backend.html 的樣式合并 */
+/* index.html 和 backend.html 的样式合并 */
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     background-color: #CAE9FF; /* Columbia blue */
-    line-height: 1.6;
 }
 
 h1, h2, span, p {
@@ -21,27 +20,23 @@ h1, h2 {
 
 h1 {
     background-color: #62B6CB; /* Moonstone */
-    font-size: clamp(1.5rem, 4vw, 2.5rem);
-    font-weight: 600;
-    box-shadow: 0 2px 10px rgba(98, 182, 203, 0.3);
+    font-size: 2em;
 }
 
 h2 {
     background-color: #62B6CB; /* Moonstone */
-    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
-    font-weight: 500;
+    font-size: 1em;
 }
 
 span, p {
-    padding: 8px;
-    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    padding: 5px;
+    font-size: 1.5em;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    width: 95%;
 }
 
 ul {
@@ -51,43 +46,29 @@ ul {
 }
 
 li {
-    padding: 15px;
-    margin: 8px 0;
-    background-color: #f8f9fa;
-    border-radius: 10px;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #f2f2f2;
+    border-radius: 5px;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-li:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Button styles */
 .btn, .sbtn, .finishGameBtn, .assignBtn, .assuranceBtn, .restBtn, .deleteBtn, .cleanBtn, .incrementBtn, .decrementBtn, .leaveBtn {
     display: inline-block;
-    padding: clamp(12px, 2.5vw, 18px) clamp(20px, 4vw, 30px);
+    padding: 10px 20px;
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
     cursor: pointer;
     text-decoration: none;
-    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
-    font-weight: 500;
-    transition: all 0.3s ease;
+    font-size: 1em;
+    transition: background-color 0.3s;
     color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    min-height: 44px; /* 確保觸控友好 */
 }
 
 .btn-group {
     text-align: center;
-    margin-bottom: 25px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
+    margin-bottom: 20px;
 }
 
 .btn {
@@ -96,19 +77,15 @@ li:hover {
 
 .btn:hover {
     background-color: #5FA8D3; /* Picton Blue */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .sbtn {
     background-color: #5FA8D3; /* Picton Blue */
-    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
+    font-size: 1em;
 }
 
 .sbtn:hover {
     background-color: #62B6CB; /* Moonstone */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .finishGameBtn {
@@ -117,8 +94,6 @@ li:hover {
 
 .finishGameBtn:hover {
     background-color: #5FA8D3; /* Picton Blue */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .assignBtn, .assuranceBtn {
@@ -127,92 +102,64 @@ li:hover {
 
 .assignBtn:hover, .assuranceBtn:hover {
     background-color: #5FA8D3; /* Picton Blue */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* 確認按鈕已確認狀態的樣式 */
 .assuranceBtn.confirmed {
     background-color: #1B4965; /* Indigo dye - 更深的顏色 */
-    box-shadow: 0 4px 12px rgba(27, 73, 101, 0.4);
+    box-shadow: 0 2px 4px rgba(27, 73, 101, 0.3);
 }
 
 .assuranceBtn.confirmed:hover {
     background-color: #0f2d3f; /* 更深的懸停顏色 */
-    transform: translateY(-2px);
 }
 
 .restBtn {
     background-color: #1B4965; /* Indigo dye */
-    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
-    border-radius: 25px;
+    font-size: 1em;
+    border-radius: 20px;
 }
 
 .restBtn:hover {
     background-color: #5FA8D3; /* Picton Blue */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .restBtn.resting {
     background-color: #808080;
     cursor: default;
-    transform: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .deleteBtn, .leaveBtn {
     background-color: #1B4965; /* Indigo dye */
-    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
-    border-radius: 25px;
+    font-size: 1em;
+    border-radius: 20px;
 }
 
 .deleteBtn:hover, .leaveBtn:hover {
     background-color: #5FA8D3; /* Picton Blue */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .cleanBtn {
     background-color: #5FA8D3; /* Picton Blue */
-    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
-    border-radius: 25px;
-}
-
-.cleanBtn:hover {
-    background-color: #62B6CB;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    font-size: 1em;
+    border-radius: 20px;
 }
 
 .incrementBtn, .decrementBtn {
     color: #1B4965; /* Indigo dye */
-    margin: 0px 8px;
-    padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 18px);
+    margin: 0px 5px;
+    padding: 0px 5px;
     border: 2px solid #1B4965; /* Indigo dye */
-    border-radius: 8px;
-    background-color: white;
-    font-weight: bold;
-    min-height: 40px;
-}
-
-.incrementBtn:hover, .decrementBtn:hover {
-    background-color: #1B4965;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(27, 73, 101, 0.3);
+    border-radius: 5px; /* 讓外框圓角化，可根據需求調整 */
 }
 
 .court {
-    margin: 15px auto;
-    padding: 15px;
-    border: 2px solid #1B4965;
-    max-width: 400px;
-    height: 250px;
+    margin: 10px auto;
+    padding: 10px;
+    border: 1px solid #000;
+    max-width: 300px;
+    height: 200px;
     position: relative;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    background-color: #f8f9fa;
 }
 
 .court-grid {
@@ -221,13 +168,12 @@ li:hover {
     grid-template-rows: 1fr 1fr;
     width: 100%;
     height: 100%;
-    gap: 8px;
 }
 
 /* 未確認場地的視覺提示 */
 .court.unconfirmed {
     border: 3px solid #ff6b6b; /* 紅色邊框提示未確認 */
-    box-shadow: 0 0 20px rgba(255, 107, 107, 0.4); /* 紅色陰影 */
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.3); /* 紅色陰影 */
     animation: pulse 2s infinite; /* 脈衝動畫 */
 }
 
@@ -238,13 +184,13 @@ li:hover {
 /* 脈衝動畫效果 */
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+        box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
     }
     50% {
-        box-shadow: 0 0 30px rgba(255, 107, 107, 0.6);
+        box-shadow: 0 0 25px rgba(255, 107, 107, 0.5);
     }
     100% {
-        box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+        box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
     }
 }
 
@@ -255,17 +201,11 @@ li:hover {
     background-color: #007bff;
     color: black;
     font-weight: bold;
-    border-radius: 15px;
-    border: 2px solid #1B4965;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-    transition: all 0.3s ease;
-    font-size: clamp(1.2rem, 3vw, 1.8rem);
-    min-height: 60px;
-}
-
-.player:hover {
-    transform: scale(1.02);
-    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+    border-radius: 25px;
+    border: solid;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    transition: background-color 0.3s;
+    font-size: 30px;
 }
 
 .player-background-1 {
@@ -299,15 +239,13 @@ li:hover {
     right: 10px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
 }
 
 .court-controls .btn {
     width: auto;
-    margin: 0;
-    padding: 8px 12px;
-    font-size: clamp(0.8rem, 2vw, 1rem);
-    min-height: 35px;
+    margin: 5px 0;
+    padding: 5px 10px;
+    font-size: 25px;
 }
 
 /* Dropdown styles */
@@ -320,23 +258,20 @@ li:hover {
     display: none;
     position: absolute;
     background-color: #f9f9f9;
-    min-width: 180px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1;
-    border-radius: 8px;
-    overflow: hidden;
 }
 
 .dropdown-content a {
     color: black;
-    padding: 15px 20px;
+    padding: 12px 16px;
     text-decoration: none;
     display: block;
-    transition: background-color 0.2s;
 }
 
 .dropdown-content a:hover {
-    background-color: #e9ecef;
+    background-color: #f1f1f1;
 }
 
 .dropdown:hover .dropdown-content {
@@ -346,28 +281,27 @@ li:hover {
 /* Modal container */
 .modal {
     display: none; /* Hidden by default */
-    position: fixed;
+    position:absolute;
     z-index: 1000; /* Sit on top */
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0, 0, 0, 0.6); /* Black w/ opacity */
-    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
 }
 
 /* Modal content */
 .modal-content {
     background-color: #fefefe;
-    margin: 10% auto; /* 10% from the top and centered */
-    padding: 30px;
-    border: none;
-    width: 90%; /* Could be more or less, depending on screen size */
-    max-width: 600px;
-    border-radius: 15px;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 500px;
+    border-radius: 10px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
     animation: fadeIn 0.3s; /* Smooth fade-in effect */
 }
 
@@ -376,92 +310,39 @@ li:hover {
 #addUserModal .modal-content button {
     width: 100%;
     padding: 15px;
-    margin: 12px 0;
-    font-size: clamp(1rem, 2.5vw, 1.1rem);
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
+    margin: 10px 0;
+    font-size: 18px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
     box-sizing: border-box;
-    transition: border-color 0.3s;
-}
-
-#addUserModal .modal-content input[type="text"]:focus,
-#addUserModal .modal-content select:focus {
-    border-color: #62B6CB;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(98, 182, 203, 0.1);
 }
 
 /* Close button */
 .close-btn {
     color: #aaa;
     float: right;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: bold;
     cursor: pointer;
-    transition: color 0.3s;
-    position: absolute;
-    top: 15px;
-    right: 20px;
 }
 
 .close-btn:hover,
 .close-btn:focus {
-    color: #1B4965;
+    color: black;
     text-decoration: none;
 }
 
 /* Fade-in animation */
 @keyframes fadeIn {
-    from { 
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to { 
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Media query for small screens */
-@media (max-width: 768px) {
-    .container {
-        padding: 15px;
-        width: 98%;
-    }
-    
-    .btn-group {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .btn, .sbtn, .finishGameBtn, .assignBtn, .assuranceBtn, .restBtn, .deleteBtn, .cleanBtn, .leaveBtn {
-        width: 100%;
-        max-width: 300px;
-    }
-    
-    .court {
-        max-width: 100%;
-        height: 200px;
-    }
-    
-    .modal-content {
-        margin: 5% auto;
-        padding: 20px;
-        width: 95%;
-    }
-}
-
-@media (max-width: 480px) {
-    .court-controls {
-        position: static;
-        flex-direction: row;
-        justify-content: center;
-        margin-top: 10px;
-    }
-    
-    .court-controls .btn {
-        font-size: 0.9rem;
-        padding: 6px 10px;
+@media (max-width: 600px) {
+    .btn {
+        display: block;
+        margin: 10px auto;
     }
 }
 
@@ -489,31 +370,17 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin: 20px 0;
-    background-color: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 th, td {
-    padding: 15px;
+    padding: 10px;
     text-align: left;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #ddd;
 }
 
 th {
     background-color: #62B6CB; /* Moonstone */
     color: white;
-    font-weight: 600;
-    font-size: clamp(0.9rem, 2.2vw, 1rem);
-}
-
-td {
-    font-size: clamp(0.85rem, 2vw, 0.95rem);
-}
-
-tr:hover {
-    background-color: #f8f9fa;
 }
 
 .edit-btn { background-color: #5FA8D3; } /* Picton Blue */
@@ -528,106 +395,33 @@ tr:hover {
 #importPlayersModal .modal-content button {
     width: 100%;
     padding: 15px;
-    margin: 12px 0;
-    font-size: clamp(1rem, 2.5vw, 1.1rem);
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
+    margin: 10px 0;
+    font-size: 18px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
     box-sizing: border-box;
-    transition: border-color 0.3s;
-}
-
-#importPlayersModal .modal-content input[type="text"]:focus {
-    border-color: #62B6CB;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(98, 182, 203, 0.1);
 }
 
 #importPlayersModal .modal-content textarea {
     width: 100%;
     padding: 15px;
-    margin: 12px 0;
-    font-size: clamp(0.9rem, 2.2vw, 1rem);
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
+    margin: 10px 0;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
     box-sizing: border-box;
     resize: vertical;
-    min-height: 120px;
-    transition: border-color 0.3s;
 }
 
-#importPlayersModal .modal-content textarea:focus {
-    border-color: #62B6CB;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(98, 182, 203, 0.1);
-}
-
-/* 現代化的 Radio 按鈕樣式 */
 #importPlayersModal .modal-content input[type="radio"] {
-    display: none;
+    margin-right: 8px;
 }
 
 #importPlayersModal .modal-content label {
-    font-size: clamp(1rem, 2.5vw, 1.1rem);
+    font-size: 16px;
     cursor: pointer;
-    display: block;
-    margin-bottom: 15px;
-    padding: 15px 20px;
-    background-color: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-    position: relative;
-    padding-left: 50px;
-}
-
-#importPlayersModal .modal-content label:before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    border: 2px solid #62B6CB;
-    border-radius: 50%;
-    background-color: white;
-    transition: all 0.3s ease;
-}
-
-#importPlayersModal .modal-content label:after {
-    content: '';
-    position: absolute;
-    left: 21px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #62B6CB;
-    opacity: 0;
-    transition: all 0.3s ease;
-}
-
-#importPlayersModal .modal-content input[type="radio"]:checked + label {
-    background-color: #e3f2fd;
-    border-color: #62B6CB;
-    box-shadow: 0 2px 8px rgba(98, 182, 203, 0.2);
-}
-
-#importPlayersModal .modal-content input[type="radio"]:checked + label:before {
-    border-color: #62B6CB;
-    background-color: #62B6CB;
-}
-
-#importPlayersModal .modal-content input[type="radio"]:checked + label:after {
-    opacity: 1;
-    background-color: white;
-}
-
-#importPlayersModal .modal-content label:hover {
-    background-color: #e9ecef;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    margin-bottom: 10px;
 }
 
 #importPlayersModal .modal-content button {
@@ -635,36 +429,28 @@ tr:hover {
     color: white;
     border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    min-height: 50px;
+    transition: background-color 0.3s;
 }
 
 #importPlayersModal .modal-content button:hover {
     background-color: #5FA8D3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(98, 182, 203, 0.3);
 }
 
 #importPlayersModal .modal-content button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
 }
 
 #importStatus {
     background-color: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    padding: 15px;
-    margin-top: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 15px;
 }
 
 #importMessage {
     white-space: pre-line;
-    line-height: 1.6;
+    line-height: 1.5;
     color: #333;
-    font-size: clamp(0.9rem, 2.2vw, 1rem);
 }
