@@ -444,9 +444,10 @@ $(document).ready(() => {
     // 繪製球員
     function renderPlayers() {
         $('#playersList').empty();
-        GAME.players.forEach((player) => {
+        GAME.players.forEach((player, index) => {
             const $playerItem = $(`
                 <li class="player-background-${player.level}">
+                    <span class="player-number">${index + 1}.</span>
                     <button class="decrementBtn" data-player-name="${player.name}">-</button>
                     <span>
                         ${player.name} (上場次數: <a class="playCount">${player.playCount}</a>)
