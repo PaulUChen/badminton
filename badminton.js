@@ -476,13 +476,22 @@ $(document).ready(() => {
         } else {
             courtClass = 'court-' + court.courtName;
         }
+        
+        // 判斷場地是否未確認（有玩家但狀態為 ASSIGN）
+        const isUnconfirmed = court.players.length > 0 && court.status === COURT_STATUS.ASSIGN;
+        const courtUnconfirmedClass = isUnconfirmed ? 'unconfirmed' : '';
+        const gridUnconfirmedClass = isUnconfirmed ? 'unconfirmed' : '';
+        
+        // 判斷確認按鈕是否已確認
+        const assuranceBtnClass = court.status === COURT_STATUS.IN_USE ? 'confirmed' : '';
+        
         const courtElement = $(`
                 <li class="${courtClass}">
                     <p>${court.courtName} (場地 ${court.id})</p>
                     <a class="assignBtn" data-court-id="${court.id}">分隊</a>
-                    <a class="assuranceBtn" data-court-id="${court.id}">確定</a>
-                    <div class="court">
-                        <div class="court-grid">
+                    <a class="assuranceBtn ${assuranceBtnClass}" data-court-id="${court.id}">確定</a>
+                    <div class="court ${courtUnconfirmedClass}">
+                        <div class="court-grid ${gridUnconfirmedClass}">
                             ${court.players.map((p, i) => `<div class="player player${i + 1} player-background-${p.level}">${p.name}</div>`).join('')}
                         </div>
                         <a class="finishGameBtn" data-court-id="${court.id}">比賽結束</a>
