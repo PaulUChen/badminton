@@ -19,6 +19,7 @@
                 <div class="dropdown-content">
                     <a href="#" id="addPlayerBtn" class="sbtn"><i class="fas fa-user-plus"></i> 新增球員</a>
                     <a href="#" id="removePlayerBtn" class="sbtn"><i class="fas fa-user-minus"></i> 移除球員</a>
+                    <a href="#" id="importPlayersBtn" class="sbtn"><i class="fas fa-file-import"></i> 匯入球員</a>
                 </div>
             </div>
             
@@ -70,6 +71,39 @@
                 <option value="4">藍色</option>
             </select>
             <button id="confirmAddPlayerBtn">確定</button>
+        </div>
+    </div>
+    <div id="importPlayersModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeImportPlayersModal()">×</span>
+            <h2>匯入球員</h2>
+            <div style="margin-bottom: 15px;">
+                <label><input type="radio" name="importMethod" value="appsScript" checked> Google Apps Script</label>
+                <label style="margin-left: 20px;"><input type="radio" name="importMethod" value="csv"> 手動輸入 CSV</label>
+            </div>
+            
+            <div id="appsScriptImportSection">
+                <p>請輸入 Google Sheet 的頁籤名稱：</p>
+                <input type="text" id="appsScriptTabInput" placeholder="請輸入頁籤名稱">
+                <div style="margin-top: 10px; padding: 10px; background-color: #e8f5e8; border-radius: 5px; font-size: 14px;">
+                    <strong>推薦使用：</strong>此方法可避免 CORS 和權限問題
+                    <ul style="margin: 5px 0; padding-left: 20px;">
+                        <li>使用預設的 Google Apps Script Web App</li>
+                        <li>只需輸入頁籤名稱即可</li>
+                        <li>自動過濾狀態為「備取」的球員</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="csvImportSection" style="display: none;">
+                <p>請貼上 CSV 資料（格式：姓名,欄位B,狀態）：</p>
+                <textarea id="csvInput" placeholder="請貼上 CSV 資料，第一行為標題行" rows="10" style="width: 100%; font-family: monospace;"></textarea>
+            </div>
+            
+            <button id="confirmImportPlayersBtn">匯入</button>
+            <div id="importStatus" style="margin-top: 10px; display: none;">
+                <p id="importMessage"></p>
+            </div>
         </div>
     </div>
 </body>
@@ -129,10 +163,18 @@
     // 開始移動
     movePony();
 
-    // 監聽返回主頁按鈕的點擊事件
-    document.querySelector('#enterBackendBtn').addEventListener('click', function(event) {
-        event.preventDefault(); // 阻止默認的跳轉行為
-        saveData(); // 調用保存數據的函數
-        window.location.href = 'backend.html'; // 然後跳轉到主頁
-    });
+    // 關閉一般 modal 的函數
+    window.closeModal = function() {
+        document.getElementById('customModal').style.display = 'none';
+    };
+
+    // 監聽返回主頁按鈕的點擊事件（如果按鈕存在的話）
+    const enterBackendBtn = document.querySelector('#enterBackendBtn');
+    if (enterBackendBtn) {
+        enterBackendBtn.addEventListener('click', function(event) {
+            event.preventDefault(); // 阻止默認的跳轉行為
+            saveData(); // 調用保存數據的函數
+            window.location.href = 'backend.html'; // 然後跳轉到主頁
+        });
+    }
 </script>

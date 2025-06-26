@@ -17,6 +17,9 @@ const LEVEL = {
     BLUE: 4,
 }
 
+// Google Apps Script Web App URL
+var GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2Qsdc4VaSchDgmTN1tQhE7UOKt6MoH_xpiLJjlgcgfYpfB0o-gsueVDVw1MWfzRv3/exec';
+
 function getCombinationsBy2(ary) {
     var results = [];
     for (let i = 0; i < ary.length - 1; i++) {
@@ -329,10 +332,194 @@ const GAME = {
     },
 
     /**
+     *  從 CSV 文字匯入球員
+     *  @param {String} csvText - CSV 文字內容
+     *  @return {Object} - 匯入結果
+     */
+    importPlayersFromCSV(csvText) {
+        try {
+            const lines = csvText.split('\n');
+            const importedPlayers = [];
+            let skippedCount = 0;
+            
+            // 跳過標題行，從第二行開始處理
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // 解析 CSV 行，處理可能包含逗號的欄位
+                const columns = this.parseCSVLine(line);
+                if (columns.length >= 3) {
+                    const name = columns[0].trim().replace(/"/g, ''); // 移除引號
+                    const status = columns[2].trim().replace(/"/g, ''); // C 欄位是狀態
+                    
+                    // 如果狀態不是"備取"，則匯入該球員
+                    if (status !== '備取' && name) {
+                        // 檢查是否已存在相同姓名的球員
+                        if (!this.players.find(p => p.name === name)) {
+                            const player = this.addPlayer(name, 1); // 預設為綠色等級
+                            if (player) {
+                                importedPlayers.push(name);
+                            }
+                        } else {
+                            skippedCount++;
+                        }
+                    }
+                }
+            }
+            
+            return {
+                success: true,
+                importedCount: importedPlayers.length,
+                skippedCount: skippedCount,
+                importedPlayers: importedPlayers
+            };
+            
+        } catch (error) {
+            console.error('匯入 CSV 球員時發生錯誤:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    },
+
+    /**
+     *  解析 CSV 行，處理包含逗號的欄位
+     *  @param {String} line - CSV 行
+     *  @return {Array} - 解析後的欄位陣列
+     */
+    parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current);
+        return result;
+    },
+
+    /**
      *  回傳資料
      */
     print() {
         console.log(JSON.stringify(this, null, 4));
+    },
+
+    /**
+     *  從 Google Sheet 匯入球員
+     *  @param {String} sheetTabName - Google Sheet 頁籤名稱
+     *  @return {Promise} - 匯入結果
+     */
+    async importPlayersFromSheet(sheetTabName) {
+        const sheetId = '1kYYwQ6u0vQf4uglG9GMUmq-KEbhq5FUKRpz8WeCLCqE';
+        // 使用更簡單的 CSV 匯出 URL
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=${encodeURIComponent(sheetTabName)}`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                mode: 'no-cors', // 嘗試使用 no-cors 模式
+                headers: {
+                    'Accept': 'text/csv,text/plain,*/*'
+                }
+            });
+            
+            if (!response.ok && response.status !== 0) { // no-cors 模式下 status 可能是 0
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const csvText = await response.text();
+            
+            // 檢查回應是否包含錯誤訊息
+            if (csvText.includes('error') || csvText.includes('Error') || csvText.includes('403')) {
+                throw new Error('無法存取 Google Sheet，請確認檔案已設為公開或使用手動 CSV 匯入');
+            }
+            
+            // 使用 CSV 匯入方法處理資料
+            return this.importPlayersFromCSV(csvText);
+            
+        } catch (error) {
+            console.error('匯入球員時發生錯誤:', error);
+            
+            // 提供更詳細的錯誤訊息和解決方案
+            return {
+                success: false,
+                error: `無法從 Google Sheet 匯入資料：${error.message}\n\n建議解決方案：\n1. 確認 Google Sheet 已設為公開\n2. 使用手動 CSV 匯入功能\n3. 複製 Google Sheet 資料並貼到 CSV 輸入框`
+            };
+        }
+    },
+
+    /**
+     *  透過 Google Apps Script 從 Google Sheet 匯入球員
+     *  @param {String} sheetTabName - Google Sheet 頁籤名稱
+     *  @param {String} scriptUrl - Google Apps Script Web App URL
+     *  @return {Promise} - 匯入結果
+     */
+    async importPlayersFromSheetViaAppsScript(sheetTabName, scriptUrl) {
+        try {
+            const url = `${scriptUrl}?sheetTabName=${encodeURIComponent(sheetTabName)}`;
+            
+            const response = await fetch(url, {
+                method: 'GET'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.error || '未知錯誤');
+            }
+            
+            // 處理匯入的資料
+            const importedPlayers = [];
+            let skippedCount = 0;
+            
+            for (let playerData of result.data) {
+                let name = playerData.name;
+                let status = playerData.status;
+                
+                // 檢查是否已存在相同姓名的球員
+                if (!this.players.find(p => p.name === name)) {
+                    let player = this.addPlayer(name, 1); // 預設為綠色等級
+                    if (player) {
+                        importedPlayers.push(name);
+                    }
+                } else {
+                    skippedCount++;
+                }
+            }
+            
+            return {
+                success: true,
+                importedCount: importedPlayers.length,
+                skippedCount: skippedCount,
+                importedPlayers: importedPlayers,
+                totalAvailable: result.totalCount
+            };
+            
+        } catch (error) {
+            console.error('透過 Apps Script 匯入球員時發生錯誤:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     },
 };
 
@@ -355,10 +542,95 @@ $(document).ready(() => {
         $('#addPlayerModal').hide();
     };
 
+    // 匯入球員按鈕
+    $('#importPlayersBtn').on('click', () => {
+        $('#appsScriptTabInput').val('');
+        $('#csvInput').val('');
+        $('#importStatus').hide();
+        $('#importPlayersModal').show();
+    });
+
+    window.closeImportPlayersModal = function() {
+        $('#importPlayersModal').hide();
+    };
+
+    // 切換匯入方式
+    $('input[name="importMethod"]').on('change', function() {
+        var method = $(this).val();
+        if (method === 'appsScript') {
+            $('#appsScriptImportSection').show();
+            $('#csvImportSection').hide();
+        } else {
+            $('#appsScriptImportSection').hide();
+            $('#csvImportSection').show();
+        }
+    });
+
+    // 確定匯入球員
+    $('#confirmImportPlayersBtn').on('click', async () => {
+        var importMethod = $('input[name="importMethod"]:checked').val();
+        
+        // 顯示載入狀態
+        $('#importStatus').show();
+        $('#importMessage').text('正在匯入球員...');
+        $('#confirmImportPlayersBtn').prop('disabled', true);
+
+        try {
+            var result;
+            
+            if (importMethod === 'appsScript') {
+                var sheetTabName = $('#appsScriptTabInput').val();
+                
+                if (!sheetTabName) {
+                    alert('請輸入頁籤名稱');
+                    $('#confirmImportPlayersBtn').prop('disabled', false);
+                    return;
+                }
+                
+                // 直接使用設定的 Google Apps Script URL
+                result = await GAME.importPlayersFromSheetViaAppsScript(sheetTabName, GOOGLE_APPS_SCRIPT_URL);
+            } else {
+                var csvText = $('#csvInput').val();
+                if (!csvText) {
+                    alert('請輸入 CSV 資料');
+                    $('#confirmImportPlayersBtn').prop('disabled', false);
+                    return;
+                }
+                result = GAME.importPlayersFromCSV(csvText);
+            }
+            
+            if (result.success) {
+                var message = `匯入完成！\n成功匯入 ${result.importedCount} 名球員\n跳過 ${result.skippedCount} 名重複球員`;
+                if (result.importedPlayers.length > 0) {
+                    message += `\n匯入的球員：${result.importedPlayers.join(', ')}`;
+                }
+                if (result.totalAvailable) {
+                    message += `\n總共可匯入：${result.totalAvailable} 名球員`;
+                }
+                $('#importMessage').text(message);
+                
+                // 更新畫面並儲存資料
+                renderPlayers();
+                saveData();
+                
+                // 3秒後關閉 modal
+                setTimeout(() => {
+                    closeImportPlayersModal();
+                }, 3000);
+            } else {
+                $('#importMessage').text(`匯入失敗：${result.error}`);
+            }
+        } catch (error) {
+            $('#importMessage').text(`匯入失敗：${error.message}`);
+        } finally {
+            $('#confirmImportPlayersBtn').prop('disabled', false);
+        }
+    });
+
     // 确定新增球员
     $('#confirmAddPlayerBtn').on('click', () => {
-        const playerName = $('#playerNameInput').val();
-        const playerLevel = $('#playerLevelSelect').val();
+        var playerName = $('#playerNameInput').val();
+        var playerLevel = $('#playerLevelSelect').val();
         if (playerName && playerLevel) {
             GAME.addPlayer(playerName, parseInt(playerLevel));
             renderPlayers();
@@ -378,7 +650,7 @@ $(document).ready(() => {
 
     // 刪除球員按鈕
     $('#removePlayerBtn').on('click', () => {
-        const playerName = prompt('請輸入要移除的球員姓名:');
+        var playerName = prompt('請輸入要移除的球員姓名:');
         if (playerName) {
             GAME.removePlayer(playerName);
             renderPlayers();
