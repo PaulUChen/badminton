@@ -153,6 +153,42 @@ li {
     border-radius: 5px; /* 讓外框圓角化，可根據需求調整 */
 }
 
+.colorBtn {
+    background-color: #f8f9fa;
+    border: 2px solid #1B4965;
+    border-radius: 20px;
+    padding: 5px 10px;
+    margin: 0px 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.colorBtn:hover {
+    background-color: #e9ecef;
+    transform: scale(1.1);
+}
+
+.color-indicator {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.color-1 {
+    color: #a8d5ba; /* 綠色 */
+}
+
+.color-2 {
+    color: #f7e08c; /* 黃色 */
+}
+
+.color-3 {
+    color: #f5a3a3; /* 紅色 */
+}
+
+.color-4 {
+    color: #a3c4f5; /* 藍色 */
+}
+
 .court {
     margin: 10px auto;
     padding: 10px;

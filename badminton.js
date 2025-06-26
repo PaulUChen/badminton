@@ -3,23 +3,19 @@ const COURT_STATUS = {
     ASSIGN: 2,      // 指派人員中
     IN_USE: 3       // 使用中
 };
-
 const PLAYER_STATUS = {
     REST: 1,        // 不排場
     WAIT: 2,        // 等待上場
     PLAY: 3         // 比賽中
 };
-
 const LEVEL = {
     GREEN: 1,
     YELLOW: 2,
     RED: 3,
     BLUE: 4,
 }
-
 // Google Apps Script Web App URL
 var GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2Qsdc4VaSchDgmTN1tQhE7UOKt6MoH_xpiLJjlgcgfYpfB0o-gsueVDVw1MWfzRv3/exec';
-
 function getCombinationsBy2(ary) {
     var results = [];
     for (let i = 0; i < ary.length - 1; i++) {
@@ -29,7 +25,6 @@ function getCombinationsBy2(ary) {
     }
     return results;
 }
-
 // make [].shuffle() chainable
 Array.prototype.shuffle = function () {
     var i = this.length;
@@ -41,7 +36,6 @@ Array.prototype.shuffle = function () {
     }
     return this;
 }
-
 const GAME = {
     /* 玩家
     [
@@ -59,7 +53,6 @@ const GAME = {
     playerId: 1,
     players: [],
     gameHistory: [],
-
     /* 場地
     [
         {
@@ -69,7 +62,6 @@ const GAME = {
     ]
     */
     courts: [],
-
     /**
      *  加場地
      *  @return {Court} - 加入的場地資料
@@ -84,7 +76,6 @@ const GAME = {
         this.courts.push(court)
         return court
     },
-
     /**
      *  移除空場地
      *  @return {Court} - 被移除的場地資料
@@ -94,10 +85,8 @@ const GAME = {
         if (index >= 0) {
             return this.courts.splice(index, 1)[0];
         }
-
         return undefined;
     },
-
     /**
      *  遊戲結束
      *  @param {Number} id - 場地編號
@@ -131,7 +120,6 @@ const GAME = {
             $('#playerList').append(`<li><span>${player.name}</span></li>`);
         });
     },
-
     /**
      * 更新歷史紀錄列表
      */
@@ -141,7 +129,6 @@ const GAME = {
             $('#gameHistoryList').append(`<li><span>${index + 1}. ${record}</span></li>`);
         });
     },
-
     /**
      *  下一輪的遊戲
      *  @return {Court[]} - 回傳本來是空的場，現在被補上玩家的那些場地資料array
@@ -150,51 +137,40 @@ const GAME = {
         if(courtId > -1) {
             const court = this.courts.find(c => c.id === courtId);
             var freePlayers = this.find4Players_team();
-
             // 人不夠
             if (freePlayers.length == 0) {
                 return false;
             }
-
             court.players.push(...freePlayers)
             court.players.forEach((p, i, ary) => {
                 var friendIndex = [1, 0, 3, 2][i];
                 p.friends.push(ary[friendIndex]?ary[friendIndex].name:"");
-
                 var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
                 p.enemies.push(...enemies)
             });
-
             console.log('court', court.id, ', players', court.players);
-
             return true;
         } else {
             return this.courts
                 .filter(c => c.players.length == 0) // 空的場
                 .filter(court => {                  // 填上玩家的場
                     var freePlayers = this.find4Players_team();
-
                     // 人不夠
                     if (freePlayers.length == 0) {
                         return false;
                     }
-
                     court.players.push(...freePlayers)
                     court.players.forEach((p, i, ary) => {
                         var friendIndex = [1, 0, 3, 2][i];
                         p.friends.push(ary[friendIndex].name);
-
                         var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
                         p.enemies.push(...enemies)
                     });
-
                     console.log('court', court.id, ', players', court.players);
-
                     return true;
                 });
         }
     },
-
     /**
      *  找閒置的玩家, 依玩過的場次少到多排序, 同樣場次玩家會按照隊友對手次數積分來排行
      *  @return {Player[]} - 閒置的玩家
@@ -228,26 +204,20 @@ const GAME = {
               }
               return ary;
             }, [])
-        
         // 兩人一隊分法
         // teams = [[1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [1, 11], ...]
         var teams = getCombinationsBy2(players);
-
         // 兩隊一場比賽
         // var twoTeams = [[[1, 2], [1, 3]],[[1, 2], [1, 4]],[[1, 2], [1, 5]],[[1, 2], [1, 6]], ...]
         var twoTeams = getCombinationsBy2(teams);
         var t = twoTeams.length
-
         // 過濾掉兩邊隊伍有重複人的狀況
         // var twoTeams = [[[1, 2], [3, 4]],[[1, 2], [3, 5]],[[1, 2], [3, 6]],[[1, 2], [3, 7]], ...];
         var twoTeams = twoTeams.filter(([team1, team2]) => team1.every(p => !team2.includes(p)))
-
         console.log(`${players.length}人, ${teams.length}種隊伍, ${twoTeams.length}種比賽可能(未扣除兩邊重複人數前${t})`)
-
         if (twoTeams.length == 0) {
             return [];
         }
-
         return twoTeams
             .map(twoTeam => { // twoTeam: [[player1, player2], [player3, player4]]
                 return {
@@ -261,7 +231,6 @@ const GAME = {
             .shuffle()[0]                                                       // 隨機取一組
             .flat(); 
     },
-
     /**
      *  加玩家
      *  @param {String} playerName - 玩家的名字
@@ -285,7 +254,6 @@ const GAME = {
         this.players.push(player);
         return player;
     },
-
     /**
      *  移除玩家
      *  @param {String} playerName - 玩家的名字
@@ -302,7 +270,6 @@ const GAME = {
             return false;
         }
     },
-
     /**
      *  重置所有玩家紀錄
      */
@@ -316,21 +283,18 @@ const GAME = {
         this.gameHistory = [];
         this.updateGameHistoryDisplay();
     },
-
     /**
      *  清除所有玩家
      */
     resetPeople() {
         this.players = [];
     },
-
     /**
      *  清除所有場地
      */
     resetCourt() {
         this.courts = [];
     },
-
     /**
      *  從 CSV 文字匯入球員
      *  @param {String} csvText - CSV 文字內容
@@ -341,12 +305,10 @@ const GAME = {
             const lines = csvText.split('\n');
             const importedPlayers = [];
             let skippedCount = 0;
-            
             // 跳過標題行，從第二行開始處理
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
-                
                 // 解析 CSV 行，處理可能包含逗號的欄位
                 const columns = this.parseCSVLine(line);
                 if (columns.length >= 3) {
@@ -366,14 +328,12 @@ const GAME = {
                     }
                 }
             }
-            
             return {
                 success: true,
                 importedCount: importedPlayers.length,
                 skippedCount: skippedCount,
                 importedPlayers: importedPlayers
             };
-            
         } catch (error) {
             console.error('匯入 CSV 球員時發生錯誤:', error);
             return {
@@ -382,7 +342,6 @@ const GAME = {
             };
         }
     },
-
     /**
      *  解析 CSV 行，處理包含逗號的欄位
      *  @param {String} line - CSV 行
@@ -392,10 +351,8 @@ const GAME = {
         const result = [];
         let current = '';
         let inQuotes = false;
-        
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
-            
             if (char === '"') {
                 inQuotes = !inQuotes;
             } else if (char === ',' && !inQuotes) {
@@ -405,18 +362,15 @@ const GAME = {
                 current += char;
             }
         }
-        
         result.push(current);
         return result;
     },
-
     /**
      *  回傳資料
      */
     print() {
         console.log(JSON.stringify(this, null, 4));
     },
-
     /**
      *  透過 Google Apps Script 從 Google Sheet 匯入球員
      *  @param {String} sheetTabName - Google Sheet 頁籤名稱
@@ -426,25 +380,19 @@ const GAME = {
     async importPlayersFromSheetViaAppsScript(sheetTabName, scriptUrl) {
         try {
             const url = `${scriptUrl}?sheetTabName=${encodeURIComponent(sheetTabName)}`;
-            
             const response = await fetch(url, {
                 method: 'GET'
             });
-            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
             const result = await response.json();
-            
             if (!result.success) {
                 throw new Error(result.error || '未知錯誤');
             }
-            
             // 處理匯入的資料
             const importedPlayers = [];
             let skippedCount = 0;
-            
             for (let playerData of result.data) {
                 let name = playerData.name;
                 let status = playerData.status;
@@ -461,7 +409,6 @@ const GAME = {
                     skippedCount++;
                 }
             }
-            
             return {
                 success: true,
                 importedCount: importedPlayers.length,
@@ -469,7 +416,6 @@ const GAME = {
                 importedPlayers: importedPlayers,
                 totalAvailable: result.totalCount
             };
-            
         } catch (error) {
             console.error('透過 Apps Script 匯入球員時發生錯誤:', error);
             return {
@@ -479,7 +425,6 @@ const GAME = {
         }
     },
 };
-
 $(document).ready(() => {
     const model = localStorage.getItem("model")
     if (model) {
@@ -488,17 +433,14 @@ $(document).ready(() => {
         GAME.courts = data.courts;
         GAME.gameHistory = data.gameHistory;
     }
-
     $('#addPlayerBtn').on('click', () => {
         $('#playerNameInput').val('');
         $('#playerLevelSelect').val('1');
         $('#addPlayerModal').show();
     });
-
     window.closeAddPlayerModal = function() {
         $('#addPlayerModal').hide();
     };
-
     // 匯入球員按鈕
     $('#importPlayersBtn').on('click', () => {
         $('#appsScriptTabInput').val('');
@@ -506,11 +448,9 @@ $(document).ready(() => {
         $('#importStatus').hide();
         $('#importPlayersModal').show();
     });
-
     window.closeImportPlayersModal = function() {
         $('#importPlayersModal').hide();
     };
-
     // 切換匯入方式
     $('input[name="importMethod"]').on('change', function() {
         var method = $(this).val();
@@ -522,28 +462,22 @@ $(document).ready(() => {
             $('#csvImportSection').show();
         }
     });
-
     // 確定匯入球員
     $('#confirmImportPlayersBtn').on('click', async () => {
         var importMethod = $('input[name="importMethod"]:checked').val();
-        
         // 顯示載入狀態
         $('#importStatus').show();
         $('#importMessage').text('正在匯入球員...');
         $('#confirmImportPlayersBtn').prop('disabled', true);
-
         try {
             var result;
-            
             if (importMethod === 'appsScript') {
                 var sheetTabName = $('#appsScriptTabInput').val();
-                
                 if (!sheetTabName) {
                     alert('請輸入頁籤名稱');
                     $('#confirmImportPlayersBtn').prop('disabled', false);
                     return;
                 }
-                
                 // 直接使用設定的 Google Apps Script URL
                 result = await GAME.importPlayersFromSheetViaAppsScript(sheetTabName, GOOGLE_APPS_SCRIPT_URL);
             } else {
@@ -555,7 +489,6 @@ $(document).ready(() => {
                 }
                 result = GAME.importPlayersFromCSV(csvText);
             }
-            
             if (result.success) {
                 var message = `匯入完成！\n成功匯入 ${result.importedCount} 名球員\n跳過 ${result.skippedCount} 名重複球員`;
                 if (result.importedPlayers.length > 0) {
@@ -565,11 +498,9 @@ $(document).ready(() => {
                     message += `\n總共可匯入：${result.totalAvailable} 名球員`;
                 }
                 $('#importMessage').text(message);
-                
                 // 更新畫面並儲存資料
                 renderPlayers();
                 saveData();
-                
                 // 3秒後關閉 modal
                 setTimeout(() => {
                     closeImportPlayersModal();
@@ -583,7 +514,6 @@ $(document).ready(() => {
             $('#confirmImportPlayersBtn').prop('disabled', false);
         }
     });
-
     // 确定新增球员
     $('#confirmAddPlayerBtn').on('click', () => {
         var playerName = $('#playerNameInput').val();
@@ -597,14 +527,12 @@ $(document).ready(() => {
             alert('請輸入球員姓名並選擇分級');
         }
     });
-
     // 新增場地按鈕
     $('#addCourtBtn').on('click', () => {
         GAME.addCourt();
         renderCourts();
         saveData();
     });
-
     // 刪除球員按鈕
     $('#removePlayerBtn').on('click', () => {
         var playerName = prompt('請輸入要移除的球員姓名:');
@@ -614,35 +542,30 @@ $(document).ready(() => {
             saveData();
         }
     });
-
     // 刪除空場地按鈕
     $('#removeCourtBtn').on('click', () => {
         GAME.removeEmptyCourt();
         renderCourts();
         saveData();
     });
-
     // 重置所有玩家紀錄按鈕
     $('#resetRecordBtn').on('click', () => {
         GAME.resetRecord();
         renderPlayers();
         saveData();
     });
-
     // 清除所有玩家按鈕
     $('#resetPeopleBtn').on('click', () => {
         GAME.resetPeople();
         renderPlayers();
         saveData();
     });
-
     // 清除所有場地按鈕
     $('#resetCourtBtn').on('click', () => {
         GAME.resetCourt();
         renderCourts();
         saveData();
     });
-
     // 增加上場次數
     $(document).on('click', '.incrementBtn', function() {
         const playerName = $(this).data('player-name');
@@ -653,7 +576,6 @@ $(document).ready(() => {
             saveData();
         }
     });
-
     // 減少上場次數
     $(document).on('click', '.decrementBtn', function() {
         const playerName = $(this).data('player-name');
@@ -664,12 +586,10 @@ $(document).ready(() => {
             saveData();
         }
     });
-
     // 儲存資料
     function saveData() {
         localStorage.setItem("model", JSON.stringify(GAME));
     }
-
     // 繪製球員
     function renderPlayers() {
         $('#playersList').empty();
@@ -685,6 +605,9 @@ $(document).ready(() => {
                     <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-name="${player.name}">
                         ${player.status == PLAYER_STATUS.REST ? '不排場' : '休息'}
                     </button>
+                    <button class="colorBtn" data-player-name="${player.name}" data-current-level="${player.level}">
+                        <span class="color-indicator color-${player.level}">●</span>
+                    </button>
                     <button class="deleteBtn" data-player-name="${player.name}"> 刪除 </button>
                     <button class="cleanBtn" data-player-name="${player.name}"> 重置狀態 </button>
                 </li>
@@ -692,7 +615,6 @@ $(document).ready(() => {
             $('#playersList').append($playerItem);
         });
     }
-
     // 繪製場地
     function renderCourts() {
         $('#courtsList').empty();
@@ -706,15 +628,12 @@ $(document).ready(() => {
         } else {
             courtClass = 'court-' + court.courtName;
         }
-        
         // 判斷場地是否未確認（有玩家但狀態為 ASSIGN）
         const isUnconfirmed = court.players.length > 0 && court.status === COURT_STATUS.ASSIGN;
         const courtUnconfirmedClass = isUnconfirmed ? 'unconfirmed' : '';
         const gridUnconfirmedClass = isUnconfirmed ? 'unconfirmed' : '';
-        
         // 判斷確認按鈕是否已確認
         const assuranceBtnClass = court.status === COURT_STATUS.IN_USE ? 'confirmed' : '';
-        
         const courtElement = $(`
                 <li class="${courtClass}">
                     <p>${court.courtName} (場地 ${court.id})</p>
@@ -730,11 +649,9 @@ $(document).ready(() => {
             `);
             $('#courtsList').append(courtElement);
         });
-    
         $('.finishGameBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
             var court = GAME.courts.find(c => c.id == courtId);
-
             if (court.status == COURT_STATUS.IN_USE) {
                 if(confirm('確定要結束比賽? 請確認點擊正確')) {
                     GAME.gameFinish(courtId);
@@ -746,7 +663,6 @@ $(document).ready(() => {
                 alert('請按下確認鍵');
             }
         });
-
         //分隊
         $('.assignBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
@@ -762,7 +678,6 @@ $(document).ready(() => {
                 alert('已確認隊伍 無法更動');
             }
         });
-
         //確認隊伍
         $('.assuranceBtn').off('click').on('click', function() {
             const courtId = $(this).data('court-id');
@@ -786,7 +701,6 @@ $(document).ready(() => {
             }
         });
     }
-
     $(document).on('click', '.restBtn', function () {
         const playerName = $(this).data('player-name');
         const player = GAME.players.find(p => p.name === playerName);
@@ -804,7 +718,6 @@ $(document).ready(() => {
         }
         saveData();
     });
-
     $(document).on('click', '.deleteBtn', function () {
         const playerName = $(this).data('player-name');
         const player = GAME.players.find(p => p.name === playerName);
@@ -823,7 +736,6 @@ $(document).ready(() => {
         }
         saveData();
     });
-
     $(document).on('click', '.cleanBtn', function () {
         const playerName = $(this).data('player-name');
         const player = GAME.players.find(p => p.name === playerName);
@@ -831,10 +743,22 @@ $(document).ready(() => {
         renderPlayers();
         saveData();        
     });
-
+    // 顏色按鈕點擊事件
+    $(document).on('click', '.colorBtn', function () {
+        const playerName = $(this).data('player-name');
+        const player = GAME.players.find(p => p.name === playerName);
+        if (player) {
+            // 循環切換顏色等級：1(綠) -> 2(黃) -> 3(紅) -> 4(藍) -> 1(綠)
+            player.level = player.level % 4 + 1;
+            // 更新按鈕的 data 屬性
+            $(this).data('current-level', player.level);
+            // 重新渲染球員列表以更新顏色
+            renderPlayers();
+            saveData();
+        }
+    });
     // 初始化畫面
     renderPlayers();
     renderCourts();
     GAME.updateGameHistoryDisplay();
-
 });
