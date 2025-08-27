@@ -490,3 +490,63 @@ th {
     line-height: 1.5;
     color: #333;
 }
+
+/* 計時器樣式 */
+.court-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    background: linear-gradient(135deg, #62B6CB, #5FA8D3);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(98, 182, 203, 0.3);
+}
+
+.court-header p {
+    margin: 0;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.game-timer {
+    background: linear-gradient(135deg, #1B4965, #0f2d3f);
+    color: #00ff88;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    box-shadow: 
+        0 0 20px rgba(0, 255, 136, 0.3),
+        inset 0 0 20px rgba(0, 255, 136, 0.1);
+    border: 2px solid rgba(0, 255, 136, 0.3);
+    min-width: 80px;
+    text-align: center;
+    animation: timerGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes timerGlow {
+    from {
+        box-shadow: 
+            0 0 20px rgba(0, 255, 136, 0.3),
+            inset 0 0 20px rgba(0, 255, 136, 0.1);
+    }
+    to {
+        box-shadow: 
+            0 0 30px rgba(0, 255, 136, 0.5),
+            inset 0 0 30px rgba(0, 255, 136, 0.2);
+    }
+}
+
+/* 當計時器為空時的樣式 */
+.game-timer:empty {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: #adb5bd;
+    box-shadow: none;
+    border: 2px solid #adb5bd;
+    animation: none;
+}

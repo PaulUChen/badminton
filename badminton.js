@@ -16,6 +16,7 @@ const LEVEL = {
 }
 // Google Apps Script Web App URL
 var GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2Qsdc4VaSchDgmTN1tQhE7UOKt6MoH_xpiLJjlgcgfYpfB0o-gsueVDVw1MWfzRv3/exec';
+
 function getCombinationsBy2(ary) {
     var results = [];
     for (let i = 0; i < ary.length - 1; i++) {
@@ -53,6 +54,8 @@ const GAME = {
     playerId: 1,
     players: [],
     gameHistory: [],
+    gameTimers: {}, // 儲存每個場地的計時器
+    gameStartTimes: {}, // 儲存每個場地的開始時間
     /* 場地
     [
         {
@@ -101,13 +104,91 @@ const GAME = {
             // 添加比賽歷程記錄
             var playerNames = players.map(p => p.name).join(', ');
             if (playerNames) {
-                this.gameHistory.push(playerNames);
+                // 獲取比賽時間並添加到歷程中
+                const gameTime = this.getGameTime(id);
+                const timeString = this.formatTime(gameTime);
+                const record = `${playerNames} (${timeString})`;
+                this.gameHistory.push(record);
                 this.updateGameHistoryDisplay();
             }
+            // 停止計時器
+            this.stopGameTimer(id);
             return players;
         } else {
             console.log('court index error', id);
             return [];
+        }
+    },
+    /**
+     * 開始比賽計時
+     * @param {Number} courtId - 場地編號
+     */
+    startGameTimer(courtId) {
+        if (this.gameTimers && this.gameTimers[courtId]) {
+            clearInterval(this.gameTimers[courtId]);
+        }
+        if (!this.gameStartTimes) this.gameStartTimes = {};
+        if (!this.gameTimers) this.gameTimers = {};
+        this.gameStartTimes[courtId] = Date.now();
+        this.gameTimers[courtId] = setInterval(() => {
+            this.updateGameTimerDisplay(courtId);
+        }, 1000);
+    },
+    /**
+     * 停止比賽計時
+     * @param {Number} courtId - 場地編號
+     */
+    stopGameTimer(courtId) {
+        if (this.gameTimers && this.gameTimers[courtId]) {
+            clearInterval(this.gameTimers[courtId]);
+            delete this.gameTimers[courtId];
+        }
+        if (this.gameStartTimes && this.gameStartTimes[courtId]) {
+            delete this.gameStartTimes[courtId];
+        }
+        // 清空計時器顯示
+        this.updateGameTimerDisplay(courtId, true);
+    },
+    /**
+     * 獲取比賽時間（毫秒）
+     * @param {Number} courtId - 場地編號
+     * @return {Number} - 比賽時間（毫秒）
+     */
+    getGameTime(courtId) {
+        if (!this.gameStartTimes || !this.gameStartTimes[courtId]) return 0;
+        return Date.now() - this.gameStartTimes[courtId];
+    },
+    /**
+     * 格式化時間為 HH:MM:SS 格式
+     * @param {Number} milliseconds - 毫秒數
+     * @return {String} - 格式化後的時間字串
+     */
+    formatTime(milliseconds) {
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    },
+    /**
+     * 更新計時器顯示
+     * @param {Number} courtId - 場地編號
+     * @param {Boolean} clear - 是否清空顯示
+     */
+    updateGameTimerDisplay(courtId, clear = false) {
+        const timerElement = document.querySelector(`#court-${courtId}-timer`);
+        if (timerElement) {
+            if (clear) {
+                timerElement.textContent = '';
+            } else {
+                const gameTime = this.getGameTime(courtId);
+                timerElement.textContent = this.formatTime(gameTime);
+            }
         }
     },
     /**
@@ -275,13 +356,21 @@ const GAME = {
      */
      resetRecord() {
         this.players.forEach(player => {
-            player.playCount = 0;
+            // player.playCount = 0;
             player.friends = [];
             player.enemies = [];
             player.status = PLAYER_STATUS.REST;
         });
         this.gameHistory = [];
         this.updateGameHistoryDisplay();
+        // 重置所有場地狀態和計時器
+        this.courts.forEach(court => {
+            if (court.status === COURT_STATUS.IN_USE) {
+                court.status = COURT_STATUS.EMPTY;
+                this.stopGameTimer(court.id);
+            }
+            court.players = [];
+        });
     },
     /**
      *  清除所有玩家
@@ -293,6 +382,10 @@ const GAME = {
      *  清除所有場地
      */
     resetCourt() {
+        // 停止所有計時器
+        this.courts.forEach(court => {
+            this.stopGameTimer(court.id);
+        });
         this.courts = [];
     },
     /**
@@ -432,6 +525,15 @@ $(document).ready(() => {
         GAME.players = data.players;
         GAME.courts = data.courts;
         GAME.gameHistory = data.gameHistory;
+        
+        // 恢復進行中的比賽計時器
+        GAME.courts.forEach(court => {
+            if (court.status === COURT_STATUS.IN_USE) {
+                // 如果場地正在使用中，重新開始計時器
+                // 注意：這裡只是為了顯示，實際時間會從載入時開始計算
+                GAME.startGameTimer(court.id);
+            }
+        });
     }
     $('#addPlayerBtn').on('click', () => {
         $('#playerNameInput').val('');
@@ -636,7 +738,10 @@ $(document).ready(() => {
         const assuranceBtnClass = court.status === COURT_STATUS.IN_USE ? 'confirmed' : '';
         const courtElement = $(`
                 <li class="${courtClass}">
-                    <p>${court.courtName} (場地 ${court.id})</p>
+                    <div class="court-header">
+                        <p>${court.courtName} (場地 ${court.id})</p>
+                        <div class="game-timer" id="court-${court.id}-timer"></div>
+                    </div>
                     <a class="assignBtn" data-court-id="${court.id}">分隊</a>
                     <a class="assuranceBtn ${assuranceBtnClass}" data-court-id="${court.id}">確定</a>
                     <div class="court ${courtUnconfirmedClass}">
@@ -671,6 +776,8 @@ $(document).ready(() => {
                 court.status = COURT_STATUS.ASSIGN;// 派遣隊伍中
                 var players = court.players.splice(0);
                 // players.forEach(p => p.isPlaying = false);
+                // 重置計時器
+                GAME.stopGameTimer(courtId);
                 GAME.nextGame(courtId);
                 renderCourts();
                 renderPlayers();
@@ -689,6 +796,8 @@ $(document).ready(() => {
                     player.status = PLAYER_STATUS.PLAY;
                     player.playCount++;
                 });
+                // 開始計時
+                GAME.startGameTimer(courtId);
                 renderCourts();
                 renderPlayers();
                 saveData();
