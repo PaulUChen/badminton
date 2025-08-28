@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Calendar 空閑時間查詢</title>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="calendar-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-calendar-alt"></i> Google Calendar 空閑時間查詢</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- 左側：日曆顯示區域 -->
+            <div class="calendar-section">
+                <div class="calendar-header">
+                    <button id="prevMonth" class="nav-btn"><i class="fas fa-chevron-left"></i></button>
+                    <h2 id="currentMonth">2025年8月</h2>
+                    <button id="nextMonth" class="nav-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="calendar-grid">
+                    <div class="calendar-weekdays">
+                        <div>日</div>
+                        <div>一</div>
+                        <div>二</div>
+                        <div>三</div>
+                        <div>四</div>
+                        <div>五</div>
+                        <div>六</div>
+                    </div>
+                    <div id="calendarDays" class="calendar-days"></div>
+                </div>
+
+                <div class="auth-section">
+                    <div id="authStatus" class="auth-status">
+                        <i class="fas fa-info-circle"></i>
+                        <span>請先授權您的Google帳號以查看行事曆</span>
+                    </div>
+                    <button id="authButton" class="auth-btn">
+                        <i class="fab fa-google"></i>
+                        授權 Google 帳號
+                    </button>
+                    <!-- 添加調試資訊 -->
+                    <div id="debugInfo" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+                </div>
+            </div>
+
+            <!-- 右側：功能區域 -->
+            <div class="function-section">
+                <div class="function-panel">
+                    <h3><i class="fas fa-tools"></i> 功能選單</h3>
+                    
+                    <div class="function-group">
+                        <h4><i class="fas fa-clock"></i> 空閑時間查詢</h4>
+                        
+                        <div class="time-input-group">
+                            <label for="startDate">開始日期：</label>
+                            <input type="date" id="startDate" required>
+                        </div>
+                        
+                        <div class="time-input-group">
+                            <label for="endDate">結束日期：</label>
+                            <input type="date" id="endDate" required>
+                        </div>
+                        
+                        <div class="time-input-group">
+                            <label for="startTime">每日開始時間：</label>
+                            <input type="time" id="startTime" value="09:00" required>
+                        </div>
+                        
+                        <div class="time-input-group">
+                            <label for="endTime">每日結束時間：</label>
+                            <input type="time" id="endTime" value="18:00" required>
+                        </div>
+                        
+                        <button id="findFreeTimeBtn" class="function-btn" disabled>
+                            <i class="fas fa-search"></i>
+                            找出空閑時間
+                        </button>
+                    </div>
+
+                    <div class="output-section">
+                        <h4><i class="fas fa-list"></i> 查詢結果</h4>
+                        <div id="outputBox" class="output-box">
+                            <p class="placeholder-text">查詢結果將顯示在這裡...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入中提示 -->
+    <div id="loadingModal" class="loading-modal">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>載入中...</p>
+        </div>
+    </div>
+
+    <script src="calendar.js"></script>
+</body>
+</html>

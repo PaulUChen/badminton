@@ -1,0 +1,552 @@
+/* Google Calendar 空閑時間查詢網頁樣式 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 標題樣式 */
+header h1 {
+    text-align: center;
+    color: white;
+    font-size: 2.5em;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+header h1 i {
+    margin-right: 15px;
+    color: #ffd700;
+}
+
+/* 主要內容區域 */
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+    align-items: start;
+}
+
+/* 日曆區域樣式 */
+.calendar-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.calendar-header h2 {
+    font-size: 1.8em;
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.nav-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.nav-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 日曆網格樣式 */
+.calendar-grid {
+    margin-bottom: 25px;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.calendar-weekdays div {
+    text-align: center;
+    padding: 15px 5px;
+    font-weight: 600;
+    color: #667eea;
+    background: #f7fafc;
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    border: 2px solid transparent;
+}
+
+.calendar-day:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.calendar-day.today {
+    background: #667eea;
+    color: white;
+    font-weight: 600;
+}
+
+.calendar-day.other-month {
+    color: #cbd5e0;
+}
+
+.calendar-day.has-events {
+    background: #fed7d7;
+    border-color: #fc8181;
+}
+
+.calendar-day.has-events::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    width: 6px;
+    height: 6px;
+    background: #e53e3e;
+    border-radius: 50%;
+}
+
+.day-number {
+    font-size: 1.1em;
+    font-weight: 500;
+}
+
+.event-count {
+    font-size: 0.7em;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
+/* 授權區域樣式 */
+.auth-section {
+    text-align: center;
+    padding: 20px;
+    background: #f7fafc;
+    border-radius: 10px;
+    border: 2px dashed #cbd5e0;
+}
+
+.auth-status {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #ebf8ff;
+    border-radius: 8px;
+    color: #2b6cb0;
+    font-size: 0.9em;
+}
+
+.auth-status i {
+    margin-right: 8px;
+}
+
+.auth-btn {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+}
+
+.auth-btn:hover {
+    background: #3367d6;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+}
+
+.auth-btn i {
+    margin-right: 8px;
+}
+
+.auth-btn.signed-out {
+    background: #dc3545;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.auth-btn.signed-out:hover {
+    background: #c82333;
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.auth-status.warning {
+    border-left-color: #ffc107;
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* 功能區域樣式 */
+.function-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+.function-panel h3 {
+    color: #4a5568;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+    font-size: 1.4em;
+}
+
+.function-panel h3 i {
+    margin-right: 10px;
+    color: #667eea;
+}
+
+.function-group {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.function-group h4 {
+    color: #4a5568;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.function-group h4 i {
+    margin-right: 8px;
+    color: #667eea;
+}
+
+.time-input-group {
+    margin-bottom: 15px;
+}
+
+.time-input-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #4a5568;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.time-input-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9em;
+    transition: border-color 0.3s ease;
+}
+
+.time-input-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.function-btn {
+    width: 100%;
+    background: #48bb78;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+}
+
+.function-btn:hover:not(:disabled) {
+    background: #38a169;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+.function-btn:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 輸出區域樣式 */
+.output-section {
+    margin-top: 25px;
+}
+
+.output-section h4 {
+    color: #4a5568;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.output-section h4 i {
+    margin-right: 8px;
+    color: #667eea;
+}
+
+.output-box {
+    background: #f8f9fa;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+
+.placeholder-text {
+    color: #a0aec0;
+    text-align: center;
+    font-style: italic;
+}
+
+.free-time-result {
+    background: #f0fff4;
+    border: 1px solid #c6f6d5;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.free-time-result h5 {
+    color: #22543d;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+.free-time-result p {
+    color: #2f855a;
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+/* 載入中樣式 */
+.loading-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-content p {
+    color: #4a5568;
+    font-size: 1.1em;
+}
+
+/* 響應式設計 */
+@media (max-width: 1200px) {
+    .main-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .function-section {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    .calendar-section,
+    .function-section {
+        padding: 20px;
+    }
+    
+    .calendar-weekdays div,
+    .calendar-day {
+        font-size: 0.8em;
+    }
+}
+
+/* 成功狀態樣式 */
+.auth-status.success {
+    background: #f0fff4;
+    color: #22543d;
+    border: 1px solid #c6f6d5;
+}
+
+.auth-status.error {
+    background: #fed7d7;
+    color: #742a2a;
+    border: 1px solid #fc8181;
+}
+
+/* 事件指示器樣式 */
+.event-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    background: #e53e3e;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+/* 日期事件泡泡框樣式 */
+.day-events-popup {
+    position: absolute;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    padding: 0;
+    z-index: 1000;
+    min-width: 250px;
+    max-width: 300px;
+    animation: popupFadeIn 0.3s ease-out;
+}
+
+.day-events-popup::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid #667eea;
+}
+
+.popup-header {
+    background: #667eea;
+    color: white;
+    padding: 12px 15px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    font-size: 0.95em;
+    text-align: center;
+}
+
+.popup-content {
+    padding: 15px;
+}
+
+.popup-event {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9em;
+    color: #4a5568;
+}
+
+.popup-event:last-child {
+    border-bottom: none;
+}
+
+@keyframes popupFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* 有事件的日期游標樣式 */
+.calendar-day.has-events {
+    cursor: pointer;
+}
+
+.calendar-day.has-events:hover {
+    background: #fed7d7;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
