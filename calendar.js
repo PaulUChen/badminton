@@ -188,12 +188,20 @@ class GoogleCalendarManager {
             this.currentDate.setMonth(this.currentDate.getMonth() - 1);
             this.renderCalendar();
             this.updateMonthDisplay();
+            // 如果已登入，重新載入事件以確保新月份的事件能正確顯示
+            if (this.isSignedIn && this.accessToken) {
+                this.loadCalendarEvents();
+            }
         });
 
         document.getElementById('nextMonth').addEventListener('click', () => {
             this.currentDate.setMonth(this.currentDate.getMonth() + 1);
             this.renderCalendar();
             this.updateMonthDisplay();
+            // 如果已登入，重新載入事件以確保新月份的事件能正確顯示
+            if (this.isSignedIn && this.accessToken) {
+                this.loadCalendarEvents();
+            }
         });
 
         // 授權按鈕
@@ -264,13 +272,14 @@ class GoogleCalendarManager {
         
         // 渲染上個月的日期
         for (let i = firstDayWeekday - 1; i >= 0; i--) {
-            const dayElement = this.createDayElement(prevMonthDays - i, 'other-month');
+            const actualDay = prevMonthDays - i;
+            const dayElement = this.createDayElement(actualDay, 'other-month', 'prev');
             calendarDays.appendChild(dayElement);
         }
         
         // 渲染當前月份的日期
         for (let day = 1; day <= lastDay.getDate(); day++) {
-            const dayElement = this.createDayElement(day, 'current-month');
+            const dayElement = this.createDayElement(day, 'current-month', 'current');
             
             // 檢查是否為今天
             const currentDay = new Date(year, month, day);
@@ -293,12 +302,12 @@ class GoogleCalendarManager {
         
         // 渲染下個月的日期
         for (let day = 1; day <= remainingCells; day++) {
-            const dayElement = this.createDayElement(day, 'other-month');
+            const dayElement = this.createDayElement(day, 'other-month', 'next');
             calendarDays.appendChild(dayElement);
         }
     }
 
-    createDayElement(day, monthType) {
+    createDayElement(day, monthType, monthPosition = 'current') {
         const dayElement = document.createElement('div');
         dayElement.className = `calendar-day ${monthType}`;
         
@@ -308,20 +317,45 @@ class GoogleCalendarManager {
         
         dayElement.appendChild(dayNumber);
         
+        // 根據月份類型和位置計算正確的日期
+        let currentDay;
+        if (monthType === 'current-month') {
+            // 當前月份
+            currentDay = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), day);
+        } else {
+            // 其他月份
+            const year = this.currentDate.getFullYear();
+            const month = this.currentDate.getMonth();
+
+            if (monthPosition === 'prev') {
+                // 上個月的日期
+                const prevMonth = month === 0 ? 11 : month - 1;
+                const prevYear = month === 0 ? year - 1 : year;
+                currentDay = new Date(prevYear, prevMonth, day);
+            } else if (monthPosition === 'next') {
+                // 下個月的日期
+                const nextMonth = month === 11 ? 0 : month + 1;
+                const nextYear = month === 11 ? year + 1 : year;
+                currentDay = new Date(nextYear, nextMonth, day);
+            } else {
+                // 預設為當前月份（不應該發生）
+                currentDay = new Date(year, month, day);
+            }
+        }
+
         // 檢查是否有事件，如果有則顯示事件數量
-        const currentDay = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), day);
         const dayEvents = this.events.filter(event => {
             const eventDate = new Date(event.start.dateTime || event.start.date);
             return eventDate.toDateString() === currentDay.toDateString();
         });
-        
+
         if (dayEvents.length > 0) {
             const eventCount = document.createElement('div');
             eventCount.className = 'event-count';
             eventCount.textContent = `${dayEvents.length} 個事件`;
             dayElement.appendChild(eventCount);
         }
-        
+
         // 為有事件的日期添加點擊事件
         if (dayEvents.length > 0) {
             dayElement.style.cursor = 'pointer';
@@ -329,7 +363,7 @@ class GoogleCalendarManager {
                 this.showDayEventsPopup(currentDay, dayEvents, dayElement);
             });
         }
-        
+
         return dayElement;
     }
 
@@ -338,6 +372,33 @@ class GoogleCalendarManager {
         return date.getDate() === today.getDate() &&
                date.getMonth() === today.getMonth() &&
                date.getFullYear() === today.getFullYear();
+    }
+
+    getCalendarPosition(day, monthType) {
+        // 計算日期元素在日曆網格中的位置（0-41，共42個位置）
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+
+        // 獲取月份第一天是星期幾
+        const firstDay = new Date(year, month, 1);
+        const firstDayWeekday = firstDay.getDay();
+
+        if (monthType === 'current-month') {
+            // 當前月份的日期位置
+            return firstDayWeekday + day - 1;
+        } else if (monthType === 'other-month') {
+            // 其他月份的日期位置
+            if (day <= 7) {
+                // 上個月的日期
+                return firstDayWeekday - (7 - day) - 1;
+            } else {
+                // 下個月的日期
+                const lastDay = new Date(year, month + 1, 0);
+                const lastDayWeekday = new Date(year, month + 1, lastDay.getDate()).getDay();
+                return firstDayWeekday + lastDay.getDate() + (day - 1);
+            }
+        }
+        return 0;
     }
 
     hasEventsOnDate(date) {
@@ -367,11 +428,11 @@ class GoogleCalendarManager {
             
             this.showLoading(true);
             
-            // 獲取當前月份的事件
+            // 獲取當前月份以及未來2個月的事件
             const year = this.currentDate.getFullYear();
             const month = this.currentDate.getMonth();
             const startDate = new Date(year, month, 1);
-            const endDate = new Date(year, month + 1, 0);
+            const endDate = new Date(year, month + 3, 0); // 擴展到未來2個月
             
             // 使用fetch API直接調用Google Calendar API
             const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?` + 
