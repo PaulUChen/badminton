@@ -1,11 +1,35 @@
 /* index.html 和 backend.html 的样式合并 */
 
+/* 統一的顏色系統 - 柔和的藍綠色系 */
+:root {
+    --primary-color: #4A90A4;        /* 主色：深藍綠 */
+    --primary-light: #6BB6C7;        /* 主色淺：中藍綠 */
+    --primary-lighter: #8FC4D0;      /* 主色更淺：淺藍綠 */
+    --primary-lightest: #B8DCE5;     /* 主色最淺：極淺藍綠 */
+    --background: #E8F4F8;           /* 背景：極淺藍 */
+    --surface: #FFFFFF;              /* 表面：白色 */
+    --text-primary: #2C3E50;         /* 主要文字：深灰藍 */
+    --text-secondary: #5A6C7D;       /* 次要文字：中灰藍 */
+    --border-color: #D0E3EA;         /* 邊框：淺灰藍 */
+    --shadow: rgba(74, 144, 164, 0.15); /* 陰影 */
+    --shadow-hover: rgba(74, 144, 164, 0.25);
+    --success: #7FB3A3;              /* 成功色：柔綠 */
+    --warning: #D4A574;              /* 警告色：柔橙 */
+    --danger: #C97A7A;               /* 危險色：柔紅 */
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    background-color: #CAE9FF; /* Columbia blue */
+    background: linear-gradient(135deg, var(--background) 0%, #F0F7FA 100%);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
 }
 
 h1, h2, span, p {
@@ -16,16 +40,37 @@ h1, h2, span, p {
 h1, h2 {
     color: white;
     padding: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
 
 h1 {
-    background-color: #62B6CB; /* Moonstone */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
     font-size: 2em;
+    box-shadow: 0 2px 8px var(--shadow);
 }
 
 h2 {
-    background-color: #62B6CB; /* Moonstone */
-    font-size: 1em;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
+    font-size: 1.1em;
+    border-radius: 8px 8px 0 0;
+    margin-top: 20px;
+}
+
+.players-title-wrap {
+    position: relative;
+    margin-top: 20px;
+}
+
+.players-title-wrap .sortPlayersBtn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 6px 14px;
+    font-size: 0.85em;
+    line-height: 1.2;
+    border-radius: 6px;
 }
 
 span, p {
@@ -34,7 +79,7 @@ span, p {
 }
 
 .container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -46,156 +91,306 @@ ul {
 }
 
 li {
-    padding: 10px;
-    margin: 5px 0;
-    background-color: #f2f2f2;
-    border-radius: 5px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    background-color: var(--surface);
+    border-radius: 8px;
     text-align: center;
+    box-shadow: 0 2px 4px var(--shadow);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
-/* Button styles */
-.btn, .sbtn, .finishGameBtn, .assignBtn, .assuranceBtn, .restBtn, .deleteBtn, .cleanBtn, .incrementBtn, .decrementBtn, .leaveBtn {
+li:hover {
+    box-shadow: 0 4px 8px var(--shadow-hover);
+    transform: translateY(-1px);
+}
+
+/* 比賽歷程列表樣式 */
+#gameHistoryList li {
+    text-align: left;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--primary-lightest) 100%);
+    border-left: 3px solid var(--primary-light);
+}
+
+#gameHistoryList li span {
+    font-size: 0.95em;
+    color: var(--text-primary);
+    padding: 0;
+}
+
+/* Button styles - 統一的按鈕設計 */
+.btn, .sbtn, .finishGameBtn, .assignBtn, .assuranceBtn, .forceClearBtn, .restBtn, .deleteBtn, .cleanBtn, .incrementBtn, .decrementBtn, .leaveBtn {
     display: inline-block;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     text-decoration: none;
-    font-size: 1em;
-    transition: background-color 0.3s;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.3s ease;
     color: white;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px var(--shadow);
+}
+
+.btn:hover, .sbtn:hover, .finishGameBtn:hover, .assignBtn:hover, .assuranceBtn:hover, .restBtn:hover, .deleteBtn:hover, .cleanBtn:hover, .leaveBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px var(--shadow-hover);
+}
+
+.btn:active, .sbtn:active, .finishGameBtn:active, .assignBtn:active, .assuranceBtn:active, .restBtn:active, .deleteBtn:active, .cleanBtn:active, .leaveBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px var(--shadow);
 }
 
 .btn-group {
-    text-align: center;
-    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--shadow);
 }
 
 .btn {
-    background-color: #1B4965; /* Indigo dye */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
 }
 
 .btn:hover {
-    background-color: #5FA8D3; /* Picton Blue */
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
 }
 
 .sbtn {
-    background-color: #5FA8D3; /* Picton Blue */
-    font-size: 1em;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
+    font-size: 0.9em;
 }
 
 .sbtn:hover {
-    background-color: #62B6CB; /* Moonstone */
+    background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--primary-lightest) 100%);
 }
 
 .finishGameBtn {
-    background-color: #1B4965; /* Indigo dye */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
 }
 
 .finishGameBtn:hover {
-    background-color: #5FA8D3; /* Picton Blue */
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
 }
 
 .assignBtn, .assuranceBtn {
-    background-color: #62B6CB; /* Moonstone */
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
 }
 
 .assignBtn:hover, .assuranceBtn:hover {
-    background-color: #5FA8D3; /* Picton Blue */
+    background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--primary-lightest) 100%);
+}
+
+/* 強制清除場地 */
+.forceClearBtn {
+    background: linear-gradient(135deg, var(--danger) 0%, #D99A9A 100%);
+    padding: 6px 12px;
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+.forceClearBtn:hover {
+    background: linear-gradient(135deg, #D99A9A 0%, #E5B5B5 100%);
 }
 
 /* 確認按鈕已確認狀態的樣式 */
 .assuranceBtn.confirmed {
-    background-color: #1B4965; /* Indigo dye - 更深的顏色 */
-    box-shadow: 0 2px 4px rgba(27, 73, 101, 0.3);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3A7080 100%);
+    box-shadow: 0 2px 6px rgba(74, 144, 164, 0.4);
 }
 
 .assuranceBtn.confirmed:hover {
-    background-color: #0f2d3f; /* 更深的懸停顏色 */
+    background: linear-gradient(135deg, #3A7080 0%, var(--primary-color) 100%);
 }
 
 .restBtn {
-    background-color: #1B4965; /* Indigo dye */
-    font-size: 1em;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    font-size: 0.85em;
     border-radius: 20px;
+    padding: 6px 14px;
 }
 
 .restBtn:hover {
-    background-color: #5FA8D3; /* Picton Blue */
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
 }
 
 .restBtn.resting {
-    background-color: #808080;
+    background: linear-gradient(135deg, #9CA3AF 0%, #B0B8C4 100%);
     cursor: default;
+    opacity: 0.8;
+}
+
+.restBtn.resting:hover {
+    transform: none;
+    box-shadow: 0 2px 4px var(--shadow);
 }
 
 .deleteBtn, .leaveBtn {
-    background-color: #1B4965; /* Indigo dye */
-    font-size: 1em;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    font-size: 0.85em;
     border-radius: 20px;
+    padding: 6px 14px;
 }
 
 .deleteBtn:hover, .leaveBtn:hover {
-    background-color: #5FA8D3; /* Picton Blue */
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
 }
 
 .cleanBtn {
-    background-color: #5FA8D3; /* Picton Blue */
-    font-size: 1em;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
+    font-size: 0.85em;
     border-radius: 20px;
+    padding: 6px 14px;
+}
+
+.cleanBtn:hover {
+    background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--primary-lightest) 100%);
 }
 
 .incrementBtn, .decrementBtn {
-    color: #1B4965; /* Indigo dye */
-    margin: 0px 5px;
-    padding: 0px 5px;
-    border: 2px solid #1B4965; /* Indigo dye */
-    border-radius: 5px; /* 讓外框圓角化，可根據需求調整 */
+    color: var(--primary-color);
+    background: var(--surface);
+    margin: 0 4px;
+    padding: 4px 10px;
+    border: 2px solid var(--primary-light);
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 600;
+    min-width: 32px;
+    transition: all 0.2s ease;
+}
+
+.incrementBtn:hover, .decrementBtn:hover {
+    background: var(--primary-lightest);
+    border-color: var(--primary-color);
+    transform: scale(1.05);
 }
 
 .colorBtn {
-    background-color: #f8f9fa;
-    border: 2px solid #1B4965;
+    background-color: var(--surface);
+    border: 2px solid var(--primary-light);
     border-radius: 20px;
-    padding: 5px 10px;
-    margin: 0px 5px;
+    padding: 4px 10px;
+    margin: 0 4px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    min-width: 36px;
 }
 
 .colorBtn:hover {
-    background-color: #e9ecef;
+    background-color: var(--primary-lightest);
+    border-color: var(--primary-color);
     transform: scale(1.1);
 }
 
 .color-indicator {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
+    line-height: 1;
 }
 
+/* 柔和的顏色等級 */
 .color-1 {
-    color: #a8d5ba; /* 綠色 */
+    color: #7FB3A3; /* 柔綠色 */
 }
 
 .color-2 {
-    color: #f7e08c; /* 黃色 */
+    color: #D4A574; /* 柔黃色 */
 }
 
 .color-3 {
-    color: #f5a3a3; /* 紅色 */
+    color: #C97A7A; /* 柔紅色 */
 }
 
 .color-4 {
-    color: #a3c4f5; /* 藍色 */
+    color: #8FC4D0; /* 柔藍色 */
+}
+
+/* 場地列表樣式 */
+#courtsList li {
+    padding: 16px;
+    margin: 12px 0;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+#courtsList li .assignBtn,
+#courtsList li .assuranceBtn {
+    margin: 0 4px 8px 0;
+    display: inline-block;
+}
+
+#courtsList li .finishGameBtn {
+    margin-top: 8px;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 場地操作列：分隊 / 確定 / 強制清除場地（右側） */
+.court-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0 6px;
+    /* 讓按鈕列寬度「以場地方格寬度」為準，並置中 */
+    max-width: 320px; /* 與 .court 的 max-width 對齊 */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.court-actions .forceClearBtn {
+    margin-left: auto;
+}
+
+.court-actions .forceClearBtn,
+.court-actions .assignBtn,
+.court-actions .assuranceBtn {
+    padding: 8px 14px;
 }
 
 .court {
-    margin: 10px auto;
-    padding: 10px;
-    border: 1px solid #000;
-    max-width: 300px;
-    height: 200px;
+    margin: 12px auto;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    max-width: 320px;
+    height: 220px;
     position: relative;
+    background: var(--surface);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px var(--shadow);
+}
+
+/* 場地右側操作區（固定在場地框右側） */
+.court-side-actions {
+    position: absolute;
+    top: 10px;
+    right: -150px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 2;
+}
+
+/* 小螢幕時避免跑出畫面：改成放回框內右上角 */
+@media (max-width: 600px) {
+    .court-side-actions {
+        right: 10px;
+        top: 10px;
+    }
 }
 
 .court-grid {
@@ -204,60 +399,147 @@ li {
     grid-template-rows: 1fr 1fr;
     width: 100%;
     height: 100%;
+    gap: 8px;
+    padding: 4px;
 }
 
 /* 未確認場地的視覺提示 */
 .court.unconfirmed {
-    border: 3px solid #ff6b6b; /* 紅色邊框提示未確認 */
-    box-shadow: 0 0 15px rgba(255, 107, 107, 0.3); /* 紅色陰影 */
-    animation: pulse 2s infinite; /* 脈衝動畫 */
+    border: 3px solid var(--warning);
+    box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
+    animation: pulse 2s infinite;
 }
 
 .court-grid.unconfirmed {
-    background: linear-gradient(45deg, rgba(255, 107, 107, 0.1), rgba(255, 193, 7, 0.1)); /* 漸層背景提示 */
+    background: linear-gradient(45deg, rgba(212, 165, 116, 0.1), rgba(212, 165, 116, 0.05));
 }
 
 /* 脈衝動畫效果 */
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+        box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
     }
     50% {
-        box-shadow: 0 0 25px rgba(255, 107, 107, 0.5);
+        box-shadow: 0 0 25px rgba(212, 165, 116, 0.5);
     }
     100% {
-        box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+        box-shadow: 0 0 15px rgba(212, 165, 116, 0.3);
     }
 }
 
+/* 場地內的球員 */
 .player {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #007bff;
-    color: black;
-    font-weight: bold;
-    border-radius: 25px;
-    border: solid;
-    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-    transition: background-color 0.3s;
-    font-size: 30px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-weight: 600;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 2px 4px var(--shadow);
+    transition: all 0.3s ease;
+    font-size: 24px;
+    padding: 8px;
 }
 
+.player:hover {
+    box-shadow: 0 4px 8px var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+/* 球員列表項目 - 響應式設計 */
+#playersList li {
+    display: block;
+    gap: 8px;
+    padding: 12px 16px;
+    text-align: left;
+}
+
+#playersList li .player-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+#playersList li .player-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 360px;
+    min-width: 240px;
+    flex-wrap: nowrap; /* 讓 - 名稱 + 保持在同一列（空間不夠再由整體換行） */
+}
+
+#playersList li .player-number {
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 32px;
+    flex-shrink: 0;
+}
+
+#playersList li .player-name {
+    flex: 1 1 auto;
+    min-width: 0; /* 關鍵：讓 flex item 可縮，避免把 + 擠出去 */
+    text-align: left;
+    font-size: 1.02em;
+    padding: 0;
+    color: var(--text-primary);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis; /* 大螢幕：以省空間優先，避免 + 跑到右側按鈕群 */
+}
+
+#playersList li .playCount {
+    font-weight: 600;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+#playersList li .player-meta {
+    color: var(--text-secondary);
+    font-size: 0.92em;
+    margin-left: 6px;
+}
+
+#playersList li .player-actions {
+    margin-left: auto; /* 向右靠齊 */
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+#playersList li .player-actions button {
+    margin: 0;
+}
+
+#playersList li .decrementBtn,
+#playersList li .incrementBtn {
+    padding: 4px 10px;
+    min-width: 34px;
+}
+
+/* 球員背景顏色 - 柔和版本 */
 .player-background-1 {
-    background-color: #a8d5ba; /* 暖绿色 */
+    background: linear-gradient(135deg, #E8F5F0 0%, #F0F9F5 100%);
+    border-left: 4px solid #7FB3A3;
 }
 
 .player-background-2 {
-    background-color: #f7e08c; /* 暖黄色 */
+    background: linear-gradient(135deg, #F9F3E8 0%, #FDF8F0 100%);
+    border-left: 4px solid #D4A574;
 }
 
 .player-background-3 {
-    background-color: #f5a3a3; /* 暖红色 */
+    background: linear-gradient(135deg, #F9E8E8 0%, #FDF0F0 100%);
+    border-left: 4px solid #C97A7A;
 }
 
 .player-background-4 {
-    background-color: #a3c4f5; /* 暖蓝色 */
+    background: linear-gradient(135deg, #E8F2F5 0%, #F0F7FA 100%);
+    border-left: 4px solid #8FC4D0;
 }
 
 .player1 { grid-area: 1 / 1 / 2 / 2; }
@@ -266,7 +548,7 @@ li {
 .player4 { grid-area: 2 / 2 / 3 / 3; }
 
 .court-A, .court-B, .court-C, .court-D, .court-E, .court-random {
-    background-color: #cce5ff; /* 统一为浅蓝色 */
+    background: linear-gradient(135deg, #F0F7FA 0%, var(--surface) 100%);
 }
 
 .court-controls {
@@ -275,13 +557,14 @@ li {
     right: 10px;
     display: flex;
     flex-direction: column;
+    gap: 6px;
 }
 
 .court-controls .btn {
     width: auto;
-    margin: 5px 0;
-    padding: 5px 10px;
-    font-size: 25px;
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 0.85em;
 }
 
 /* Dropdown styles */
@@ -293,79 +576,225 @@ li {
 .dropdown-content {
     display: none;
     position: absolute;
-    background-color: #f9f9f9;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
+    background-color: var(--surface);
+    min-width: 180px;
+    box-shadow: 0 4px 12px var(--shadow-hover);
+    z-index: 100;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    top: 100%;
+    left: 0;
+}
+
+.dropdown-content::before {
+    /* hover 橋樑：避免滑鼠從按鈕移到選單時穿過縫隙造成選單消失 */
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
 }
 
 .dropdown-content a {
-    color: black;
+    color: var(--text-primary);
     padding: 12px 16px;
     text-decoration: none;
     display: block;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
 }
 
 .dropdown-content a:hover {
-    background-color: #f1f1f1;
+    background-color: var(--primary-lightest);
+    color: var(--primary-color);
 }
 
 .dropdown:hover .dropdown-content {
     display: block;
 }
 
+.dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Modal container */
 .modal {
-    display: none; /* Hidden by default */
-    position:absolute;
-    z-index: 1000; /* Sit on top */
+    display: none;
+    position: fixed;
+    z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
+    overflow: auto;
+    background-color: rgba(44, 62, 80, 0.6);
+    backdrop-filter: blur(4px);
 }
 
 /* Modal content */
 .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto; /* 15% from the top and centered */
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
+    background-color: var(--surface);
+    margin: 10% auto;
+    padding: 28px;
+    border: none;
+    width: 90%;
     max-width: 500px;
-    border-radius: 10px;
+    border-radius: 12px;
     text-align: center;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-    animation: fadeIn 0.3s; /* Smooth fade-in effect */
+    box-shadow: 0 8px 24px rgba(44, 62, 80, 0.3);
+    animation: fadeIn 0.3s ease;
+    position: relative;
 }
 
-#addUserModal .modal-content input[type="text"],
-#addUserModal .modal-content select,
-#addUserModal .modal-content button {
+/* Modal typography - 避免被全域 h2 樣式（有背景色）影響 */
+.modal-content h2 {
+    background: none;
+    color: var(--text-primary);
+    margin: 8px 0 18px;
+    padding: 0;
+    font-size: 1.25em;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    border-radius: 0;
+}
+
+.modal-content p {
+    margin: 10px 0 8px;
+    padding: 0;
+    font-size: 0.95em;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+.modal-content ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+}
+
+.modal-content li {
+    box-shadow: none;
+    transform: none;
+}
+
+/* Modal form controls - 共用模板（新增球員 / 匯入球員） */
+#addPlayerModal .modal-content input[type="text"],
+#importPlayersModal .modal-content input[type="text"],
+#importPlayersModal .modal-content textarea,
+#addPlayerModal .modal-content select {
     width: 100%;
-    padding: 15px;
+    padding: 12px 14px;
     margin: 10px 0;
-    font-size: 18px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
     box-sizing: border-box;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: #F9FCFD;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    text-align: left;
+}
+
+#addPlayerModal .modal-content input[type="text"]:focus,
+#importPlayersModal .modal-content input[type="text"]:focus,
+#importPlayersModal .modal-content textarea:focus,
+#addPlayerModal .modal-content select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(74, 144, 164, 0.18);
+    background: var(--surface);
+}
+
+#importPlayersModal .modal-content textarea {
+    min-height: 140px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 14px;
+}
+
+/* Modal primary actions */
+#confirmAddPlayerBtn,
+#confirmImportPlayersBtn {
+    width: 100%;
+    padding: 12px 16px;
+    margin-top: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 650;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 8px 18px rgba(74, 144, 164, 0.25);
+}
+
+#confirmAddPlayerBtn:hover,
+#confirmImportPlayersBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 22px rgba(74, 144, 164, 0.32);
+    filter: brightness(1.02);
+}
+
+#confirmAddPlayerBtn:active,
+#confirmImportPlayersBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 8px 18px rgba(74, 144, 164, 0.25);
 }
 
 /* Close button */
 .close-btn {
-    color: #aaa;
-    float: right;
+    color: var(--text-secondary);
     font-size: 28px;
-    font-weight: bold;
+    font-weight: 300;
     cursor: pointer;
+    line-height: 1;
+    transition: color 0.3s ease;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    float: none;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(184, 220, 229, 0.35);
 }
 
 .close-btn:hover,
 .close-btn:focus {
-    color: black;
+    color: var(--primary-color);
     text-decoration: none;
+    background: rgba(184, 220, 229, 0.55);
+}
+
+/* customModal 的 OK 按鈕：避免被右上角 close 樣式影響 */
+#customModal .close-btn {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    box-shadow: 0 8px 18px rgba(74, 144, 164, 0.25);
+}
+
+#customModal .close-btn:hover,
+#customModal .close-btn:focus {
+    color: white;
+    filter: brightness(1.02);
 }
 
 /* Fade-in animation */
@@ -374,11 +803,141 @@ li {
     to { opacity: 1; }
 }
 
-/* Media query for small screens */
-@media (max-width: 600px) {
-    .btn {
-        display: block;
-        margin: 10px auto;
+/* 響應式設計 */
+@media (max-width: 1024px) {
+    #playersList li {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    #playersList li .player-number {
+        flex: 0 0 auto;
+    }
+    
+    #playersList li > span:not(.player-number) {
+        flex: 1 1 200px;
+        min-width: 150px;
+    }
+    
+    #playersList li button {
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+    
+    h1 {
+        font-size: 1.6em;
+        padding: 16px;
+    }
+    
+    h2 {
+        font-size: 1em;
+        padding: 14px;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn-group .dropdown {
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    #playersList li .player-row {
+        gap: 10px;
+    }
+
+    /* 手機：第一列「編號 - 名稱 +」，第二列 4 個功能按鈕 */
+    #playersList li .player-main {
+        flex: 1 1 100%;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    #playersList li .player-name {
+        text-align: left;
+        white-space: nowrap; /* 手機第一列維持緊湊 */
+        text-overflow: ellipsis;
+    }
+
+    #playersList li .player-actions {
+        width: 100%;
+        margin-left: 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    #playersList li .player-actions button {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 0.85em;
+        border-radius: 12px;
+    }
+    
+    .players-title-wrap .sortPlayersBtn {
+        position: static;
+        transform: none;
+        margin-top: 8px;
+        width: 100%;
+    }
+    
+    .modal-content {
+        margin: 5% auto;
+        padding: 20px;
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.4em;
+        padding: 12px;
+    }
+    
+    #playersList li .player-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2x2，最多兩列 */
+    }
+
+    .court-actions {
+        gap: 6px;
+    }
+
+    /* 手機：三顆盡量同列（縮小強制清除，靠右） */
+    .court-actions {
+        gap: 6px;
+    }
+
+    .court-actions .assignBtn,
+    .court-actions .assuranceBtn,
+    .court-actions .forceClearBtn {
+        padding: 7px 10px;
+        font-size: 0.82em;
+    }
+
+    .court-actions .forceClearBtn {
+        padding: 7px 10px;
+        font-size: 0.78em;
+        margin-left: auto; /* 仍然靠右 */
+    }
+
+    .court {
+        max-width: 100%;
+        height: 200px;
+    }
+    
+    .player {
+        font-size: 18px;
     }
 }
 
@@ -406,89 +965,170 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin: 20px 0;
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--shadow);
 }
 
 th, td {
-    padding: 10px;
+    padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border-color);
 }
 
 th {
-    background-color: #62B6CB; /* Moonstone */
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
     color: white;
+    font-weight: 600;
 }
 
-.edit-btn { background-color: #5FA8D3; } /* Picton Blue */
-.edit-btn:hover { background-color: #62B6CB; } /* Moonstone */
-.delete-btn { background-color: #f44336; } /* Red */
-.delete-btn:hover { background-color: #d32f2f; } /* Darker Red */
-.attend-btn { background-color: #4CAF50; } /* Green */
-.attend-btn:hover { background-color: #388E3C; } /* Darker Green */
+tr:hover {
+    background-color: var(--primary-lightest);
+}
+
+.edit-btn { 
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
+}
+.edit-btn:hover { 
+    background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--primary-lightest) 100%);
+}
+.delete-btn { 
+    background: linear-gradient(135deg, var(--danger) 0%, #D99A9A 100%);
+}
+.delete-btn:hover { 
+    background: linear-gradient(135deg, #D99A9A 0%, #E5B5B5 100%);
+}
+.attend-btn { 
+    background: linear-gradient(135deg, var(--success) 0%, #9FC5B3 100%);
+}
+.attend-btn:hover { 
+    background: linear-gradient(135deg, #9FC5B3 0%, #B8D4C7 100%);
+}
 
 /* 匯入球員 modal 的樣式 */
 #importPlayersModal .modal-content input[type="text"],
 #importPlayersModal .modal-content button {
     width: 100%;
-    padding: 15px;
+    padding: 12px 16px;
     margin: 10px 0;
-    font-size: 18px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
     box-sizing: border-box;
+    font-family: inherit;
+    transition: border-color 0.3s ease;
+}
+
+#importPlayersModal .modal-content input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
 
 #importPlayersModal .modal-content textarea {
     width: 100%;
-    padding: 15px;
+    padding: 12px 16px;
     margin: 10px 0;
     font-size: 14px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
     box-sizing: border-box;
     resize: vertical;
+    font-family: 'Courier New', monospace;
+    transition: border-color 0.3s ease;
+}
+
+#importPlayersModal .modal-content textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
 
 #importPlayersModal .modal-content input[type="radio"] {
-    margin-right: 8px;
+    margin: 0;
+    accent-color: var(--primary-color);
 }
 
 #importPlayersModal .modal-content label {
     font-size: 16px;
     cursor: pointer;
-    display: inline-block;
-    margin-bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: #F7FBFD;
+    margin: 6px 8px 0 0;
+    color: var(--text-primary);
+}
+
+#importPlayersModal .modal-content label:hover {
+    border-color: var(--primary-light);
+    background: var(--primary-lightest);
+}
+
+#importPlayersModal .modal-content > div[style*="margin-bottom"] {
+    text-align: left;
+}
+
+#appsScriptImportSection > div {
+    background: var(--primary-lightest) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    padding: 14px !important;
+    box-shadow: 0 6px 14px rgba(74, 144, 164, 0.12);
+}
+
+#appsScriptImportSection strong {
+    color: var(--text-primary);
+}
+
+#appsScriptImportSection ul {
+    margin-top: 6px;
+}
+
+#appsScriptImportSection li {
+    background: transparent;
+    border-radius: 0;
+    padding: 2px 0;
+    margin: 0;
+    text-align: left;
 }
 
 #importPlayersModal .modal-content button {
-    background-color: #62B6CB;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
     color: white;
     border: none;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
 #importPlayersModal .modal-content button:hover {
-    background-color: #5FA8D3;
+    background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--primary-lightest) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px var(--shadow-hover);
 }
 
 #importPlayersModal .modal-content button:disabled {
-    background-color: #ccc;
+    background: linear-gradient(135deg, #D0D0D0 0%, #E0E0E0 100%);
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 #importStatus {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    padding: 10px;
+    background-color: var(--primary-lightest);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
     margin-top: 15px;
 }
 
 #importMessage {
     white-space: pre-line;
-    line-height: 1.5;
-    color: #333;
+    line-height: 1.6;
+    color: var(--text-primary);
 }
 
 /* 計時器樣式 */
@@ -496,35 +1136,35 @@ th {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-    padding: 5px 10px;
-    background: linear-gradient(135deg, #62B6CB, #5FA8D3);
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(98, 182, 203, 0.3);
+    box-shadow: 0 2px 6px var(--shadow);
 }
 
 .court-header p {
     margin: 0;
     color: white;
-    font-weight: bold;
-    font-size: 1.1em;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    font-weight: 600;
+    font-size: 1.05em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .game-timer {
-    background: linear-gradient(135deg, #1B4965, #0f2d3f);
-    color: #00ff88;
-    padding: 8px 15px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3A7080 100%);
+    color: #B8E6D0;
+    padding: 6px 14px;
     border-radius: 20px;
     font-family: 'Courier New', monospace;
-    font-size: 1.2em;
-    font-weight: bold;
-    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    font-size: 1.1em;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     box-shadow: 
-        0 0 20px rgba(0, 255, 136, 0.3),
-        inset 0 0 20px rgba(0, 255, 136, 0.1);
-    border: 2px solid rgba(0, 255, 136, 0.3);
-    min-width: 80px;
+        0 2px 8px rgba(74, 144, 164, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(184, 230, 208, 0.3);
+    min-width: 75px;
     text-align: center;
     animation: timerGlow 2s ease-in-out infinite alternate;
 }
@@ -532,21 +1172,21 @@ th {
 @keyframes timerGlow {
     from {
         box-shadow: 
-            0 0 20px rgba(0, 255, 136, 0.3),
-            inset 0 0 20px rgba(0, 255, 136, 0.1);
+            0 2px 8px rgba(74, 144, 164, 0.4),
+            inset 0 1px 2px rgba(255, 255, 255, 0.1);
     }
     to {
         box-shadow: 
-            0 0 30px rgba(0, 255, 136, 0.5),
-            inset 0 0 30px rgba(0, 255, 136, 0.2);
+            0 4px 12px rgba(74, 144, 164, 0.6),
+            inset 0 1px 3px rgba(255, 255, 255, 0.15);
     }
 }
 
 /* 當計時器為空時的樣式 */
 .game-timer:empty {
-    background: linear-gradient(135deg, #6c757d, #495057);
-    color: #adb5bd;
-    box-shadow: none;
-    border: 2px solid #adb5bd;
+    background: linear-gradient(135deg, #B0B8C4 0%, #9CA3AF 100%);
+    color: #E5E7EB;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 2px solid #D1D5DB;
     animation: none;
 }

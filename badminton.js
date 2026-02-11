@@ -66,6 +66,41 @@ const GAME = {
     */
     courts: [],
     /**
+     * 依玩家物件（可能來自 court.players 的反序列化副本）取得主玩家陣列中的引用
+     * 優先用 id，其次用 name
+     * @param {Object} playerLike
+     * @return {Object|undefined}
+     */
+    getPlayerRef(playerLike) {
+        if (!playerLike) return undefined;
+        const id = playerLike.id;
+        if (id !== undefined && id !== null) {
+            const foundById = this.players.find(p => Number(p.id) === Number(id));
+            if (foundById) return foundById;
+        }
+        const name = playerLike.name;
+        if (name) {
+            const foundByName = this.players.find(p => p.name === name);
+            if (foundByName) return foundByName;
+        }
+        return undefined;
+    },
+    /**
+     * 修復 localStorage 還原後 court.players 與 players 不是同一份引用的問題
+     * - 讓場地內玩家重新指向 GAME.players 的同一個玩家物件
+     * - 若找不到玩家（被刪除），則從場地移除該玩家
+     */
+    relinkCourtPlayers() {
+        if (!Array.isArray(this.courts) || !Array.isArray(this.players)) return;
+        this.courts.forEach(court => {
+            if (!court) return;
+            if (!Array.isArray(court.players)) court.players = [];
+            court.players = court.players
+                .map(p => this.getPlayerRef(p) || p)
+                .filter(p => !!p && !!p.name); // 避免 undefined / 空資料
+        });
+    },
+    /**
      *  加場地
      *  @return {Court} - 加入的場地資料
      */
@@ -100,7 +135,12 @@ const GAME = {
         if (court) {
             court.status = COURT_STATUS.EMPTY;
             var players = court.players.splice(0);
-            players.forEach(p => p.status = PLAYER_STATUS.WAIT);
+            // 注意：court.players 可能是反序列化後的副本，務必同步更新到主 players
+            players.forEach(p => {
+                const ref = this.getPlayerRef(p);
+                if (ref) ref.status = PLAYER_STATUS.WAIT;
+                p.status = PLAYER_STATUS.WAIT;
+            });
             // 添加比賽歷程記錄
             var playerNames = players.map(p => p.name).join(', ');
             if (playerNames) {
@@ -113,6 +153,10 @@ const GAME = {
             }
             // 停止計時器
             this.stopGameTimer(id);
+            // 保存資料
+            if (typeof saveData === 'function') {
+                saveData();
+            }
             return players;
         } else {
             console.log('court index error', id);
@@ -120,19 +164,63 @@ const GAME = {
         }
     },
     /**
+     * 強制清除場地（用於異常狀態下無法正常「比賽結束」）
+     * 目標：最終得到空場地，並把可取得的場上玩家恢復為 WAIT
+     * @param {Number} courtId - 場地編號
+     * @return {{success:boolean, clearedPlayers:number, message?:string}}
+     */
+    forceClearCourt(courtId) {
+        // 先確保引用一致，避免只清到副本
+        this.relinkCourtPlayers();
+
+        const idNum = Number(courtId);
+        const court = this.courts.find(c => Number(c.id) === idNum);
+
+        // 不論場地是否存在，都嘗試停掉計時器/開始時間，避免殘留
+        this.stopGameTimer(idNum);
+
+        if (!court) {
+            return { success: false, clearedPlayers: 0, message: '找不到場地' };
+        }
+
+        const playersInCourt = Array.isArray(court.players) ? court.players.slice() : [];
+        playersInCourt.forEach(p => {
+            const ref = this.getPlayerRef(p);
+            if (ref) ref.status = PLAYER_STATUS.WAIT;
+            if (p) p.status = PLAYER_STATUS.WAIT;
+        });
+
+        // 清空場地玩家 & 狀態
+        court.players = [];
+        court.status = COURT_STATUS.EMPTY;
+
+        // 保底：確保 players 欄位存在
+        if (!Array.isArray(court.players)) court.players = [];
+
+        return { success: true, clearedPlayers: playersInCourt.length };
+    },
+    /**
      * 開始比賽計時
      * @param {Number} courtId - 場地編號
+     * @param {Boolean} resetTime - 是否重置開始時間（預設 false，用於恢復時保持原時間）
      */
-    startGameTimer(courtId) {
+    startGameTimer(courtId, resetTime = false) {
         if (this.gameTimers && this.gameTimers[courtId]) {
             clearInterval(this.gameTimers[courtId]);
         }
         if (!this.gameStartTimes) this.gameStartTimes = {};
         if (!this.gameTimers) this.gameTimers = {};
-        this.gameStartTimes[courtId] = Date.now();
+        // 如果是重置時間或沒有保存的開始時間，使用當前時間
+        if (resetTime || !this.gameStartTimes[courtId]) {
+            this.gameStartTimes[courtId] = Date.now();
+        }
         this.gameTimers[courtId] = setInterval(() => {
             this.updateGameTimerDisplay(courtId);
         }, 1000);
+        // 保存資料
+        if (typeof saveData === 'function') {
+            saveData();
+        }
     },
     /**
      * 停止比賽計時
@@ -230,9 +318,13 @@ const GAME = {
                 p.enemies.push(...enemies)
             });
             console.log('court', court.id, ', players', court.players);
+            // 保存資料
+            if (typeof saveData === 'function') {
+                saveData();
+            }
             return true;
         } else {
-            return this.courts
+            const result = this.courts
                 .filter(c => c.players.length == 0) // 空的場
                 .filter(court => {                  // 填上玩家的場
                     var freePlayers = this.find4Players_team();
@@ -250,6 +342,11 @@ const GAME = {
                     console.log('court', court.id, ', players', court.players);
                     return true;
                 });
+            // 保存資料
+            if (typeof saveData === 'function') {
+                saveData();
+            }
+            return result;
         }
     },
     /**
@@ -257,11 +354,28 @@ const GAME = {
      *  @return {Player[]} - 閒置的玩家
      */
     find4Players_team() {
+        // 保險：避免 localStorage 還原後引用不一致造成 includes() 失準
+        this.relinkCourtPlayers();
+
         // 雖然一次只能取出四個人, 但是一開始在撈人數的時候直接看最後會需要幾個人, 讓分組時比較多人進來
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
         console.log(this.players);
+
+        // 以 id/name 建立「目前在場上」集合（避免引用不一致時被重複選到）
+        const inCourtKeys = new Set();
+        this.courts.forEach(c => {
+            (c.players || []).forEach(p => {
+                if (p && p.id !== undefined && p.id !== null) inCourtKeys.add(`id:${Number(p.id)}`);
+                else if (p && p.name) inCourtKeys.add(`name:${p.name}`);
+            });
+        });
+
         var players = this.players
-            .filter(p => p.status == PLAYER_STATUS.WAIT && !this.courts.some(c => c.players.includes(p)))// ?? 過濾掉正在遊戲中和不排場的玩家
+            .filter(p => {
+                if (p.status !== PLAYER_STATUS.WAIT) return false;
+                const key = (p.id !== undefined && p.id !== null) ? `id:${Number(p.id)}` : `name:${p.name}`;
+                return !inCourtKeys.has(key);
+            })// 過濾掉正在遊戲中/不排場/已在場上的玩家
             .reduce((ary, p) => {
             /* 
                 照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
@@ -521,19 +635,120 @@ const GAME = {
 $(document).ready(() => {
     const model = localStorage.getItem("model")
     if (model) {
-        const data = JSON.parse(model);
-        GAME.players = data.players;
-        GAME.courts = data.courts;
-        GAME.gameHistory = data.gameHistory;
-        
-        // 恢復進行中的比賽計時器
-        GAME.courts.forEach(court => {
-            if (court.status === COURT_STATUS.IN_USE) {
-                // 如果場地正在使用中，重新開始計時器
-                // 注意：這裡只是為了顯示，實際時間會從載入時開始計算
-                GAME.startGameTimer(court.id);
+        try {
+            const data = JSON.parse(model);
+            GAME.players = data.players || [];
+            GAME.courts = data.courts || [];
+            GAME.gameHistory = data.gameHistory || [];
+            
+            // 恢復 playerId，避免 ID 重複
+            if (data.playerId) {
+                GAME.playerId = data.playerId;
+            } else if (GAME.players.length > 0) {
+                // 如果沒有保存 playerId，從現有玩家中找出最大值
+                GAME.playerId = Math.max(...GAME.players.map(p => p.id || 0)) + 1;
             }
-        });
+            
+            // 修復玩家狀態：確保每個玩家都有有效的狀態
+            GAME.players.forEach(player => {
+                if (!player.status || (player.status !== PLAYER_STATUS.REST && 
+                    player.status !== PLAYER_STATUS.WAIT && 
+                    player.status !== PLAYER_STATUS.PLAY)) {
+                    // 如果狀態無效，預設為 REST
+                    player.status = PLAYER_STATUS.REST;
+                }
+                // 確保其他必要屬性存在
+                if (!player.friends) player.friends = [];
+                if (!player.enemies) player.enemies = [];
+                if (player.playCount === undefined) player.playCount = 0;
+                if (!player.level) player.level = 1;
+            });
+            
+            // 修復場地狀態：確保狀態與實際情況一致
+            GAME.courts.forEach(court => {
+                // 如果場地沒有 status 或 status 無效，根據是否有玩家來設定
+                if (!court.status || (court.status !== COURT_STATUS.EMPTY && 
+                    court.status !== COURT_STATUS.ASSIGN && 
+                    court.status !== COURT_STATUS.IN_USE)) {
+                    if (court.players && court.players.length > 0) {
+                        // 有玩家但狀態不明，設為 ASSIGN（需要確認）
+                        court.status = COURT_STATUS.ASSIGN;
+                    } else {
+                        // 沒有玩家，設為空場地
+                        court.status = COURT_STATUS.EMPTY;
+                    }
+                }
+                // 如果場地狀態是 IN_USE 但沒有玩家，設為空場地
+                if (court.status === COURT_STATUS.IN_USE && (!court.players || court.players.length === 0)) {
+                    court.status = COURT_STATUS.EMPTY;
+                }
+                // 如果場地有玩家但狀態是 EMPTY，設為 ASSIGN
+                if (court.status === COURT_STATUS.EMPTY && court.players && court.players.length > 0) {
+                    court.status = COURT_STATUS.ASSIGN;
+                }
+                // 確保 players 陣列存在
+                if (!court.players) court.players = [];
+            });
+
+            // 修復反序列化後「players 與 court.players 不是同一份引用」的問題
+            GAME.relinkCourtPlayers();
+
+            // 同步場上玩家狀態，並清理「同一玩家出現在多個場地」的異常狀態
+            const seenInCourts = new Set();
+            GAME.courts.forEach(court => {
+                if (!court || !Array.isArray(court.players)) return;
+
+                // 去重：同一玩家不應同時存在多個場地
+                court.players = court.players.filter(p => {
+                    if (!p) return false;
+                    const key = (p.id !== undefined && p.id !== null) ? `id:${Number(p.id)}` : `name:${p.name}`;
+                    if (seenInCourts.has(key)) return false;
+                    seenInCourts.add(key);
+                    return true;
+                });
+
+                if (court.status === COURT_STATUS.IN_USE) {
+                    // 使用中：場上玩家應為 PLAY
+                    court.players.forEach(p => { p.status = PLAYER_STATUS.PLAY; });
+                    // 若人數不對，視為異常：降級為 ASSIGN/EMPTY 並停表，避免「按鈕沒反應」
+                    if (court.players.length !== 4) {
+                        court.status = (court.players.length > 0) ? COURT_STATUS.ASSIGN : COURT_STATUS.EMPTY;
+                        GAME.stopGameTimer(court.id);
+                    }
+                } else if (court.status === COURT_STATUS.ASSIGN) {
+                    // 分隊未確認：玩家應可視為 WAIT（可再重新分隊/清除）
+                    court.players.forEach(p => { p.status = PLAYER_STATUS.WAIT; });
+                    if (court.players.length === 0) {
+                        court.status = COURT_STATUS.EMPTY;
+                    }
+                } else if (court.status === COURT_STATUS.EMPTY) {
+                    // 空場地不應殘留玩家
+                    if (court.players.length > 0) {
+                        court.players.forEach(p => { p.status = PLAYER_STATUS.WAIT; });
+                        court.players = [];
+                    }
+                    GAME.stopGameTimer(court.id);
+                }
+            });
+            
+            // 恢復計時器開始時間
+            if (data.gameStartTimes) {
+                GAME.gameStartTimes = data.gameStartTimes;
+            }
+            
+            // 恢復進行中的比賽計時器
+            GAME.courts.forEach(court => {
+                if (court.status === COURT_STATUS.IN_USE) {
+                    // 如果場地正在使用中，重新開始計時器
+                    GAME.startGameTimer(court.id, false); // false 表示不重置時間，使用保存的時間
+                }
+            });
+            
+            // 修復後會在 renderCourts() 和 renderPlayers() 後保存
+        } catch (error) {
+            console.error('載入資料時發生錯誤:', error);
+            alert('載入資料時發生錯誤，請重新整理頁面或清除資料重新開始');
+        }
     }
     $('#addPlayerBtn').on('click', () => {
         $('#playerNameInput').val('');
@@ -668,13 +883,26 @@ $(document).ready(() => {
         renderCourts();
         saveData();
     });
+    // 排序球員：依顏色等級 LEVEL 由大到小（藍->紅->黃->綠）
+    $('#sortPlayersBtn').on('click', () => {
+        GAME.players.sort((a, b) => {
+            const levelA = Number(a.level || LEVEL.GREEN);
+            const levelB = Number(b.level || LEVEL.GREEN);
+            if (levelB !== levelA) return levelB - levelA; // LEVEL DESC
+            // 同色時，讓排序穩定可預期（依 id 由小到大）
+            return Number(a.id || 0) - Number(b.id || 0);
+        });
+        renderPlayers();
+        saveData();
+    });
     // 增加上場次數
     $(document).on('click', '.incrementBtn', function() {
         const playerName = $(this).data('player-name');
         const player = GAME.players.find(p => p.name === playerName);
         if (player) {
             player.playCount++;
-            $(this).siblings('span').find('.playCount').text(player.playCount);
+            // 依 DOM 結構調整：避免樣式調整後 siblings('span') 失效
+            $(this).closest('li').find('.playCount').first().text(player.playCount);
             saveData();
         }
     });
@@ -684,13 +912,40 @@ $(document).ready(() => {
         const player = GAME.players.find(p => p.name === playerName);
         if (player && player.playCount > 0) {
             player.playCount--;
-            $(this).siblings('span').find('.playCount').text(player.playCount);
+            $(this).closest('li').find('.playCount').first().text(player.playCount);
             saveData();
         }
     });
     // 儲存資料
     function saveData() {
-        localStorage.setItem("model", JSON.stringify(GAME));
+        try {
+            // 保存所有重要資料，包括 playerId 和計時器開始時間
+            const dataToSave = {
+                players: GAME.players,
+                courts: GAME.courts,
+                gameHistory: GAME.gameHistory,
+                playerId: GAME.playerId,
+                gameStartTimes: GAME.gameStartTimes || {}
+            };
+            localStorage.setItem("model", JSON.stringify(dataToSave));
+        } catch (error) {
+            console.error('儲存資料失敗:', error);
+            // 如果 localStorage 已滿，嘗試清理舊資料
+            try {
+                localStorage.removeItem("model");
+                const dataToSave = {
+                    players: GAME.players,
+                    courts: GAME.courts,
+                    gameHistory: GAME.gameHistory,
+                    playerId: GAME.playerId,
+                    gameStartTimes: GAME.gameStartTimes || {}
+                };
+                localStorage.setItem("model", JSON.stringify(dataToSave));
+            } catch (e) {
+                console.error('儲存資料失敗（清理後仍失敗）:', e);
+                alert('資料儲存失敗，請檢查瀏覽器儲存空間');
+            }
+        }
     }
     // 繪製球員
     function renderPlayers() {
@@ -698,20 +953,27 @@ $(document).ready(() => {
         GAME.players.forEach((player, index) => {
             const $playerItem = $(`
                 <li class="player-background-${player.level}">
-                    <span class="player-number">${index + 1}.</span>
-                    <button class="decrementBtn" data-player-name="${player.name}">-</button>
-                    <span>
-                        ${player.name} (上場次數: <a class="playCount">${player.playCount}</a>)
-                    </span>
-                    <button class="incrementBtn" data-player-name="${player.name}">+</button>
-                    <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-name="${player.name}">
-                        ${player.status == PLAYER_STATUS.REST ? '不排場' : '休息'}
-                    </button>
-                    <button class="colorBtn" data-player-name="${player.name}" data-current-level="${player.level}">
-                        <span class="color-indicator color-${player.level}">●</span>
-                    </button>
-                    <button class="deleteBtn" data-player-name="${player.name}"> 刪除 </button>
-                    <button class="cleanBtn" data-player-name="${player.name}"> 重置狀態 </button>
+                    <div class="player-row">
+                        <div class="player-main">
+                            <span class="player-number">${index + 1}.</span>
+                            <button class="decrementBtn" data-player-name="${player.name}" aria-label="減少上場次數">-</button>
+                            <span class="player-name">
+                                ${player.name}
+                                <span class="player-meta">(上場次數: <a class="playCount">${player.playCount}</a>)</span>
+                            </span>
+                            <button class="incrementBtn" data-player-name="${player.name}" aria-label="增加上場次數">+</button>
+                        </div>
+                        <div class="player-actions">
+                            <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-name="${player.name}">
+                                ${player.status == PLAYER_STATUS.REST ? '不排場' : '休息'}
+                            </button>
+                            <button class="colorBtn" data-player-name="${player.name}" data-current-level="${player.level}" aria-label="切換分級顏色">
+                                <span class="color-indicator color-${player.level}">●</span>
+                            </button>
+                            <button class="deleteBtn" data-player-name="${player.name}">刪除</button>
+                            <button class="cleanBtn" data-player-name="${player.name}">重置狀態</button>
+                        </div>
+                    </div>
                 </li>
             `);
             $('#playersList').append($playerItem);
@@ -719,6 +981,9 @@ $(document).ready(() => {
     }
     // 繪製場地
     function renderCourts() {
+        // 確保場上玩家引用一致，避免狀態更新只改到副本
+        GAME.relinkCourtPlayers();
+
         $('#courtsList').empty();
         const sortedCourts = GAME.courts.sort((a, b) => a.courtName.localeCompare(b.courtName));
         sortedCourts.forEach((court) => {
@@ -742,74 +1007,112 @@ $(document).ready(() => {
                         <p>${court.courtName} (場地 ${court.id})</p>
                         <div class="game-timer" id="court-${court.id}-timer"></div>
                     </div>
-                    <a class="assignBtn" data-court-id="${court.id}">分隊</a>
-                    <a class="assuranceBtn ${assuranceBtnClass}" data-court-id="${court.id}">確定</a>
+                    <div class="court-actions">
+                        <a href="#" class="assignBtn" data-court-id="${court.id}">分隊</a>
+                        <a href="#" class="assuranceBtn ${assuranceBtnClass}" data-court-id="${court.id}">確定</a>
+                        <a href="#" class="forceClearBtn" data-court-id="${court.id}">強制清除場地</a>
+                    </div>
                     <div class="court ${courtUnconfirmedClass}">
                         <div class="court-grid ${gridUnconfirmedClass}">
                             ${court.players.map((p, i) => `<div class="player player${i + 1} player-background-${p.level}">${p.name}</div>`).join('')}
                         </div>
-                        <a class="finishGameBtn" data-court-id="${court.id}">比賽結束</a>
+                        <a href="#" class="finishGameBtn" data-court-id="${court.id}">比賽結束</a>
                     </div>
                 </li>
             `);
             $('#courtsList').append(courtElement);
         });
-        $('.finishGameBtn').off('click').on('click', function() {
-            const courtId = $(this).data('court-id');
-            var court = GAME.courts.find(c => c.id == courtId);
-            if (court.status == COURT_STATUS.IN_USE) {
-                if(confirm('確定要結束比賽? 請確認點擊正確')) {
-                    GAME.gameFinish(courtId);
-                    renderCourts();
-                    renderPlayers();
-                    saveData();
-                }
-            } else {
-                alert('請按下確認鍵');
-            }
-        });
-        //分隊
-        $('.assignBtn').off('click').on('click', function() {
-            const courtId = $(this).data('court-id');
-            var court = GAME.courts.find(c => c.id == courtId);
-            if (court.status < COURT_STATUS.IN_USE) {
-                court.status = COURT_STATUS.ASSIGN;// 派遣隊伍中
-                var players = court.players.splice(0);
-                // players.forEach(p => p.isPlaying = false);
-                // 重置計時器
-                GAME.stopGameTimer(courtId);
-                GAME.nextGame(courtId);
-                renderCourts();
-                renderPlayers();
-            } else {
-                alert('已確認隊伍 無法更動');
-            }
-        });
-        //確認隊伍
-        $('.assuranceBtn').off('click').on('click', function() {
-            const courtId = $(this).data('court-id');
-            const court = GAME.courts.find(c => c.id === courtId);
-            if (court.status == COURT_STATUS.ASSIGN && court.players.length == 4) {
-                court.status = COURT_STATUS.IN_USE; // 場地使用中
-                // var players = court.players.splice(0);
-                court.players.forEach(player => {
-                    player.status = PLAYER_STATUS.PLAY;
-                    player.playCount++;
-                });
-                // 開始計時
-                GAME.startGameTimer(courtId);
+    }
+
+    // 場地按鈕事件（用事件委派，避免重繪造成偶發「沒反應」）
+    $(document).off('click', '.finishGameBtn').on('click', '.finishGameBtn', function(e) {
+        e.preventDefault();
+        const courtId = $(this).data('court-id');
+        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) {
+            alert('找不到場地');
+            return;
+        }
+        if (court.status == COURT_STATUS.IN_USE) {
+            if (confirm('確定要結束比賽? 請確認點擊正確')) {
+                GAME.gameFinish(courtId);
                 renderCourts();
                 renderPlayers();
                 saveData();
-            } else {
-                if (court.players.length < 4) {
-                    alert('未滿四個人，無法組成隊伍');
-                } else {
-                    alert('已確認');
-                }
             }
-        });
-    }
+        } else {
+            alert('請按下確認鍵');
+        }
+    });
+
+    $(document).off('click', '.assignBtn').on('click', '.assignBtn', function(e) {
+        e.preventDefault();
+        const courtId = $(this).data('court-id');
+        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) {
+            alert('找不到場地');
+            return;
+        }
+        if (court.status < COURT_STATUS.IN_USE) {
+            court.status = COURT_STATUS.ASSIGN; // 派遣隊伍中
+            // 重置計時器（避免上一場殘留）
+            GAME.stopGameTimer(courtId);
+            // 重新分隊
+            court.players.splice(0);
+            GAME.nextGame(courtId);
+            renderCourts();
+            renderPlayers();
+            saveData();
+        } else {
+            alert('已確認隊伍 無法更動');
+        }
+    });
+
+    $(document).off('click', '.assuranceBtn').on('click', '.assuranceBtn', function(e) {
+        e.preventDefault();
+        const courtId = $(this).data('court-id');
+        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) {
+            alert('找不到場地');
+            return;
+        }
+
+        // 保險：確保引用一致再改狀態
+        GAME.relinkCourtPlayers();
+
+        if (court.status == COURT_STATUS.ASSIGN && court.players.length == 4) {
+            court.status = COURT_STATUS.IN_USE; // 場地使用中
+            court.players.forEach(player => {
+                // player 已是 relink 後引用
+                player.status = PLAYER_STATUS.PLAY;
+                player.playCount++;
+            });
+            // 開始計時（重置時間，因為這是新開始的比賽）
+            GAME.startGameTimer(courtId, true);
+            renderCourts();
+            renderPlayers();
+            saveData();
+        } else {
+            if (court.players.length < 4) {
+                alert('未滿四個人，無法組成隊伍');
+            } else {
+                alert('已確認');
+            }
+        }
+    });
+
+    $(document).off('click', '.forceClearBtn').on('click', '.forceClearBtn', function(e) {
+        e.preventDefault();
+        const courtId = $(this).data('court-id');
+        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
+        const courtName = court ? `${court.courtName} (場地 ${court.id})` : `場地 ${courtId}`;
+        if (!confirm(`確定要「強制清除場地」？\n\n${courtName}\n- 將場上玩家恢復為「等待上場」\n- 停止計時並清空場地\n\n此操作用於異常狀態修復。`)) return;
+
+        GAME.forceClearCourt(courtId);
+        renderCourts();
+        renderPlayers();
+        saveData();
+    });
     $(document).on('click', '.restBtn', function () {
         const playerName = $(this).data('player-name');
         const player = GAME.players.find(p => p.name === playerName);
@@ -870,4 +1173,9 @@ $(document).ready(() => {
     renderPlayers();
     renderCourts();
     GAME.updateGameHistoryDisplay();
+    
+    // 載入資料後，如果有修復任何狀態，立即保存
+    if (model) {
+        saveData();
+    }
 });
