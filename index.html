@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Badminton</title>
-    <script src="https://code.jquery.com/jquery-3.4.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.1/axios.min.js"></script>
+    <!-- F-15：jQuery 升級至 3.7.1（修補 3.5 之前的 htmlPrefilter XSS）；移除未使用的 axios -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="badminton.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -18,11 +18,10 @@
                 <a href="#" class="btn dropdown-toggle"><i class="fas fa-user"></i> 球員管理</a>
                 <div class="dropdown-content">
                     <a href="#" id="addPlayerBtn" class="sbtn"><i class="fas fa-user-plus"></i> 新增球員</a>
-                    <a href="#" id="removePlayerBtn" class="sbtn"><i class="fas fa-user-minus"></i> 移除球員</a>
                     <a href="#" id="importPlayersBtn" class="sbtn"><i class="fas fa-file-import"></i> 匯入球員</a>
                 </div>
             </div>
-            
+
             <div class="dropdown">
                 <a href="#" class="btn dropdown-toggle"><i class="fas fa-volleyball-ball"></i> 場地管理</a>
                 <div class="dropdown-content">
@@ -30,7 +29,7 @@
                     <a href="#" id="removeCourtBtn" class="sbtn"><i class="fas fa-minus-square"></i> 移除空場地</a>
                 </div>
             </div>
-            
+
             <div class="dropdown">
                 <a href="#" class="btn dropdown-toggle"><i class="fas fa-tools"></i> 設定</a>
                 <div class="dropdown-content">
@@ -44,7 +43,6 @@
 
         <h2>場地列表</h2>
         <ul id="courtsList"></ul>
-        <!-- <div class="pony"></div> -->
 
         <span></span>
         <div class="players-title-wrap">
@@ -84,7 +82,7 @@
                 <label><input type="radio" name="importMethod" value="appsScript" checked> Google Apps Script</label>
                 <label style="margin-left: 20px;"><input type="radio" name="importMethod" value="csv"> 手動輸入 CSV</label>
             </div>
-            
+
             <div id="appsScriptImportSection">
                 <p>請輸入 Google Sheet 的頁籤名稱：</p>
                 <input type="text" id="appsScriptTabInput" placeholder="請輸入頁籤名稱">
@@ -93,79 +91,34 @@
                     <ul style="margin: 5px 0; padding-left: 20px;">
                         <li>使用預設的 Google Apps Script Web App</li>
                         <li>只需輸入頁籤名稱即可</li>
-                        <li>自動過濾狀態為「備取」的球員</li>
+                        <li>自動過濾狀態為「候補」的球員</li>
                     </ul>
                 </div>
             </div>
-            
+
             <div id="csvImportSection" style="display: none;">
                 <p>請貼上 CSV 資料（格式：姓名,欄位B,狀態）：</p>
                 <textarea id="csvInput" placeholder="請貼上 CSV 資料，第一行為標題行" rows="10" style="width: 100%; font-family: monospace;"></textarea>
             </div>
-            
+
             <button id="confirmImportPlayersBtn">匯入</button>
             <div id="importStatus" style="margin-top: 10px; display: none;">
                 <p id="importMessage"></p>
             </div>
         </div>
     </div>
+    <div id="assignPlayerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAssignPlayerModal()">×</span>
+            <h2>加入球員 — <span id="assignCourtName"></span></h2>
+            <input type="text" id="assignPlayerSearchInput" placeholder="輸入球員姓名搜尋">
+            <ul id="assignPlayerResults"></ul>
+        </div>
+    </div>
 </body>
 </html>
 <script>
-    const pony = document.querySelector('.pony');
-    let posX = 50;
-    let posY = 50;
-    let baseSpeedX = (Math.random() - 0.5) * 10; // 隨機 X 方向基本速度
-    let baseSpeedY = (Math.random() - 0.5) * 10; // 隨機 Y 方向基本速度
-    let speedX = baseSpeedX;
-    let speedY = baseSpeedY;
-    let accelerated = false; // 是否加速
-
-    function movePony() {
-        // 更新位置
-        posX += speedX;
-        posY += speedY;
-
-        // 檢查邊界，碰到邊界則反彈
-        if (posX <= 0 || posX + pony.clientWidth >= window.innerWidth) {
-            speedX = -speedX; // 反彈
-        }
-        if (posY <= 0 || posY + pony.clientHeight >= window.innerHeight) {
-            speedY = -speedY; // 反彈
-        }
-
-        // 更新小馬的位置
-        pony.style.left = posX + 'px';
-        pony.style.top = posY + 'px';
-
-        // 重複執行
-        requestAnimationFrame(movePony);
-    }
-
-    // 當滑鼠點擊或碰到小馬時加速
-    function acceleratePony() {
-        if (!accelerated) {
-            accelerated = true;
-            // 增加速度
-            speedX *= 7;
-            speedY *= 7;
-
-            // 設定 1 秒後恢復原來速度
-            setTimeout(() => {
-                speedX = baseSpeedX;
-                speedY = baseSpeedY;
-                accelerated = false;
-            }, 1500);
-        }
-    }
-
-    // 監聽滑鼠碰到或點擊小馬事件
-    pony.addEventListener('mouseenter', acceleratePony);
-    pony.addEventListener('click', acceleratePony);
-
-    // 開始移動
-    movePony();
-
+    // F-03：關鍵函式放在區塊最前面，避免被後面的錯誤中斷而未定義
     // 關閉一般 modal 的函數
     window.closeModal = function() {
         document.getElementById('customModal').style.display = 'none';
@@ -176,7 +129,7 @@
     if (enterBackendBtn) {
         enterBackendBtn.addEventListener('click', function(event) {
             event.preventDefault(); // 阻止默認的跳轉行為
-            saveData(); // 調用保存數據的函數
+            GAME.save(); // F-05：儲存統一走 GAME.save()
             window.location.href = 'backend.html'; // 然後跳轉到主頁
         });
     }

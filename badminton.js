@@ -26,28 +26,40 @@ function getCombinationsBy2(ary) {
     }
     return results;
 }
-// make [].shuffle() chainable
-Array.prototype.shuffle = function () {
-    var i = this.length;
+/**
+ * 洗牌（F-13：改為獨立函式，不再污染 Array.prototype）
+ * @param {Array} ary - 就地洗牌並回傳同一個陣列
+ */
+function shuffle(ary) {
+    var i = ary.length;
     while (i) {
         var j = Math.floor(Math.random() * i);
-        var t = this[--i];
-        this[i] = this[j];
-        this[j] = t;
+        var t = ary[--i];
+        ary[i] = ary[j];
+        ary[j] = t;
     }
-    return this;
+    return ary;
+}
+/**
+ * HTML 跳脫（F-04：姓名一律經過此函式再插入 HTML / attribute）
+ * @param {String} text
+ * @return {String}
+ */
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 const GAME = {
     /* 玩家
     [
         {
-            name,
-            playCount: 0
-            isPlaying: false,
-            active: true,
-            friends: ['A', 'B', 'A'],   // 隊友過
-            enemies: ['B', 'C'],        // 對手過
-            rest: true, // 新增rest參數,初始為true,代表不排場
+            id, name, playCount, status, level,
+            friends: ['A', 'B'],   // 隊友過（依場次順序，上限見 recordMatchHistory）
+            enemies: ['B', 'C'],   // 對手過
         },
     ]
     */
@@ -58,13 +70,19 @@ const GAME = {
     gameStartTimes: {}, // 儲存每個場地的開始時間
     /* 場地
     [
-        {
-            index: 0,
-            players: [],
-        },
+        { id, players: [], status, courtName },
     ]
     */
     courts: [],
+    /**
+     * 依 id 取得球員（F-16：識別鍵一律用 id）
+     * @param {Number} playerId
+     * @return {Object|undefined}
+     */
+    getPlayerById(playerId) {
+        if (playerId === undefined || playerId === null) return undefined;
+        return this.players.find(p => Number(p.id) === Number(playerId));
+    },
     /**
      * 依玩家物件（可能來自 court.players 的反序列化副本）取得主玩家陣列中的引用
      * 優先用 id，其次用 name
@@ -86,9 +104,19 @@ const GAME = {
         return undefined;
     },
     /**
+     * 球員是否在任一場地上（含未確認的 ASSIGN 場地）
+     * @param {Object} player
+     * @return {Boolean}
+     */
+    isPlayerOnCourt(player) {
+        if (!player) return false;
+        return this.courts.some(c => (c.players || []).some(p =>
+            p && (Number(p.id) === Number(player.id) || p.name === player.name)));
+    },
+    /**
      * 修復 localStorage 還原後 court.players 與 players 不是同一份引用的問題
      * - 讓場地內玩家重新指向 GAME.players 的同一個玩家物件
-     * - 若找不到玩家（被刪除），則從場地移除該玩家
+     * - 若找不到玩家（已被刪除），則從場地移除（F-01：不再 fallback 保留舊物件）
      */
     relinkCourtPlayers() {
         if (!Array.isArray(this.courts) || !Array.isArray(this.players)) return;
@@ -96,20 +124,61 @@ const GAME = {
             if (!court) return;
             if (!Array.isArray(court.players)) court.players = [];
             court.players = court.players
-                .map(p => this.getPlayerRef(p) || p)
-                .filter(p => !!p && !!p.name); // 避免 undefined / 空資料
+                .map(p => this.getPlayerRef(p))
+                .filter(Boolean);
         });
+    },
+    /**
+     * 儲存資料到 localStorage（F-05：由散落各處的 saveData 收斂為 GAME.save）
+     */
+    save() {
+        const dataToSave = {
+            players: this.players,
+            courts: this.courts,
+            gameHistory: this.gameHistory,
+            playerId: this.playerId,
+            gameStartTimes: this.gameStartTimes || {}
+        };
+        try {
+            localStorage.setItem("model", JSON.stringify(dataToSave));
+        } catch (error) {
+            console.error('儲存資料失敗:', error);
+            // F-14：降級策略——先捨棄最肥且最不重要的比賽歷程再重存
+            try {
+                dataToSave.gameHistory = [];
+                localStorage.setItem("model", JSON.stringify(dataToSave));
+                alert('儲存空間不足，已捨棄比賽歷程以保留球員與場地資料');
+            } catch (e) {
+                console.error('儲存資料失敗（捨棄歷程後仍失敗）:', e);
+                alert('資料儲存失敗，請檢查瀏覽器儲存空間');
+            }
+        }
+    },
+    /**
+     * 預設場地名稱＝場地 id 數字；若該數字已被其他場地（曾被改名）占用，往後找第一個未使用的數字
+     * （避免撞名，維持名稱唯一）
+     * @param {Number} id
+     * @return {String}
+     */
+    defaultCourtName(id) {
+        const used = new Set(this.courts.map(c => c.courtName));
+        let n = id;
+        while (used.has(String(n))) n++;
+        return String(n);
     },
     /**
      *  加場地
      *  @return {Court} - 加入的場地資料
      */
     addCourt() {
+        // F-02：id 改用 Math.max，不再對 courts 做有副作用的 sort
+        var id = this.courts.length === 0 ? 1 : Math.max(...this.courts.map(c => c.id)) + 1;
         var court = {
-            id: this.courts.length == 0 ? 1 : (this.courts.sort((a, b) => b.id - a.id)[0].id + 1),
+            id: id,
             players: [],
-            status: 0,
-            courtName: String.fromCharCode(65 + this.courts.length) // 使用字母A, B, C, ...
+            status: COURT_STATUS.EMPTY,
+            courtName: this.defaultCourtName(id), // 預設名稱＝id 數字，可由使用者改名
+            manualIds: []   // 手動指派的 player.id（分隊時保留、不重抽）
         }
         this.courts.push(court)
         return court
@@ -134,6 +203,7 @@ const GAME = {
         var court = this.courts.find(c => c.id == id);
         if (court) {
             court.status = COURT_STATUS.EMPTY;
+            court.manualIds = []; // 手動指派名單隨比賽結束清空
             var players = court.players.splice(0);
             // 注意：court.players 可能是反序列化後的副本，務必同步更新到主 players
             players.forEach(p => {
@@ -149,14 +219,15 @@ const GAME = {
                 const timeString = this.formatTime(gameTime);
                 const record = `${playerNames} (${timeString})`;
                 this.gameHistory.push(record);
+                // F-17：歷程保留最近 200 筆，避免 localStorage 無上限成長
+                if (this.gameHistory.length > 200) {
+                    this.gameHistory.splice(0, this.gameHistory.length - 200);
+                }
                 this.updateGameHistoryDisplay();
             }
             // 停止計時器
             this.stopGameTimer(id);
-            // 保存資料
-            if (typeof saveData === 'function') {
-                saveData();
-            }
+            this.save();
             return players;
         } else {
             console.log('court index error', id);
@@ -193,9 +264,7 @@ const GAME = {
         // 清空場地玩家 & 狀態
         court.players = [];
         court.status = COURT_STATUS.EMPTY;
-
-        // 保底：確保 players 欄位存在
-        if (!Array.isArray(court.players)) court.players = [];
+        court.manualIds = [];
 
         return { success: true, clearedPlayers: playersInCourt.length };
     },
@@ -217,10 +286,7 @@ const GAME = {
         this.gameTimers[courtId] = setInterval(() => {
             this.updateGameTimerDisplay(courtId);
         }, 1000);
-        // 保存資料
-        if (typeof saveData === 'function') {
-            saveData();
-        }
+        this.save();
     },
     /**
      * 停止比賽計時
@@ -256,7 +322,7 @@ const GAME = {
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
-        
+
         if (hours > 0) {
             return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } else {
@@ -280,78 +346,167 @@ const GAME = {
         }
     },
     /**
-     * 更新顯示的玩家列表
-     */
-    updatePlayerListDisplay() {
-        // 假設你的玩家列表是顯示在一個 id 為 playerList 的元素中
-        $('#playerList').empty();
-        this.players.forEach(player => {
-            $('#playerList').append(`<li><span>${player.name}</span></li>`);
-        });
-    },
-    /**
      * 更新歷史紀錄列表
      */
     updateGameHistoryDisplay() {
         $('#gameHistoryList').empty();
         this.gameHistory.forEach((record, index) => {
-            $('#gameHistoryList').append(`<li><span>${index + 1}. ${record}</span></li>`);
+            $('#gameHistoryList').append(`<li><span>${index + 1}. ${escapeHtml(record)}</span></li>`);
         });
     },
     /**
+     * 記錄本場的隊友/對手（於「確定」成局時呼叫一次，避免重抽過的陣容污染紀錄）
+     * @param {Court} court - 已滿 4 人的場地（slot 0,1 = 隊伍一、2,3 = 隊伍二）
+     */
+    recordMatchHistory(court) {
+        court.players.forEach((p, i, ary) => {
+            var friendIndex = [1, 0, 3, 2][i];
+            p.friends.push(ary[friendIndex] ? ary[friendIndex].name : "");
+            var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
+            p.enemies.push(...enemies);
+            // 防止無上限成長（每場 friends +1 / enemies +2）
+            if (p.friends.length > 100) p.friends.splice(0, p.friends.length - 100);
+            if (p.enemies.length > 200) p.enemies.splice(0, p.enemies.length - 200);
+        });
+    },
+    /**
+     * 某球員是否為該場地的手動指派者
+     * @param {Court} court
+     * @param {Number} playerId
+     * @return {Boolean}
+     */
+    isManualPlayer(court, playerId) {
+        return Array.isArray(court.manualIds) &&
+            court.manualIds.some(id => Number(id) === Number(playerId));
+    },
+    /**
+     * 手動指派球員到場地（搜尋面板點選加入）
+     * @param {Number} courtId
+     * @param {Number} playerId
+     * @return {{success:boolean, message?:string}}
+     */
+    assignPlayerToCourt(courtId, playerId) {
+        const court = this.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) return { success: false, message: '找不到場地' };
+        if (court.status === COURT_STATUS.IN_USE) return { success: false, message: '比賽進行中，無法加入球員' };
+        if (!Array.isArray(court.manualIds)) court.manualIds = [];
+        if (court.players.length >= 4) return { success: false, message: '場地已滿 4 人' };
+        const player = this.getPlayerById(playerId);
+        if (!player) return { success: false, message: '找不到球員' };
+        // 加入前 double-check 資格，防止搜尋清單過期
+        if (player.status === PLAYER_STATUS.REST) return { success: false, message: `${player.name} 目前為「不排場」狀態` };
+        if (player.status === PLAYER_STATUS.PLAY || this.isPlayerOnCourt(player)) return { success: false, message: `${player.name} 已在場地上` };
+        court.players.push(player);
+        court.manualIds.push(player.id);
+        court.status = COURT_STATUS.ASSIGN;
+        this.save();
+        return { success: true };
+    },
+    /**
+     * 將球員移出場地（點名移除；僅限未確認的 ASSIGN 場地）
+     * @param {Number} courtId
+     * @param {Number} playerId
+     * @return {{success:boolean, message?:string}}
+     */
+    unassignPlayerFromCourt(courtId, playerId) {
+        const court = this.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) return { success: false, message: '找不到場地' };
+        if (court.status === COURT_STATUS.IN_USE) return { success: false, message: '比賽進行中，無法移除球員' };
+        const idx = court.players.findIndex(p => Number(p.id) === Number(playerId));
+        if (idx === -1) return { success: false, message: '球員不在此場地' };
+        court.players.splice(idx, 1);
+        court.manualIds = (court.manualIds || []).filter(id => Number(id) !== Number(playerId));
+        if (court.players.length === 0) court.status = COURT_STATUS.EMPTY;
+        this.save();
+        return { success: true };
+    },
+    /**
+     * 分隊：保留手動指派者，其餘空位依現行公平演算法補滿
+     * 單次執行、無重試；補不滿時回報缺額並保留手動指派者
+     * @param {Number} courtId
+     * @return {{success:boolean, message?:string}}
+     */
+    assignCourt(courtId) {
+        const court = this.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) return { success: false, message: '找不到場地' };
+        if (court.status === COURT_STATUS.IN_USE) return { success: false, message: '已確認隊伍 無法更動' };
+        this.stopGameTimer(courtId);
+        this.relinkCourtPlayers();
+        if (!Array.isArray(court.manualIds)) court.manualIds = [];
+        // 保留手動指派者、清掉先前自動補位者；同時收斂 manualIds
+        court.players = court.players.filter(p => this.isManualPlayer(court, p.id));
+        court.manualIds = court.players.map(p => p.id);
+        const need = 4 - court.players.length;
+        if (need > 0) {
+            // 全空場地沿用原完整分隊演算法（行為不變）；有手排者只做補位
+            const fills = court.players.length === 0 ? this.find4Players_team() : this.findFillPlayers(need);
+            if (fills.length === 0) {
+                court.status = court.players.length > 0 ? COURT_STATUS.ASSIGN : COURT_STATUS.EMPTY;
+                this.save();
+                return {
+                    success: false,
+                    message: court.players.length > 0
+                        ? `等待中的球員不足，還缺 ${need} 人`
+                        : '等待中的球員不足 4 人，無法分隊'
+                };
+            }
+            court.players.push(...fills);
+        }
+        court.status = COURT_STATUS.ASSIGN;
+        console.log('court', court.id, ', players', court.players.map(p => p.name).join(', '));
+        this.save();
+        return { success: true };
+    },
+    /**
      *  下一輪的遊戲
-     *  @return {Court[]} - 回傳本來是空的場，現在被補上玩家的那些場地資料array
+     *  @param {Number} courtId - 指定場地 id；-1 表示補滿所有空場地
+     *  @return {Boolean|Court[]} - 單場模式回傳是否成功；全場模式回傳被補上玩家的場地陣列
      */
     nextGame(courtId = -1) {
-        if(courtId > -1) {
-            const court = this.courts.find(c => c.id === courtId);
-            var freePlayers = this.find4Players_team();
-            // 人不夠
-            if (freePlayers.length == 0) {
-                return false;
-            }
-            court.players.push(...freePlayers)
-            court.players.forEach((p, i, ary) => {
-                var friendIndex = [1, 0, 3, 2][i];
-                p.friends.push(ary[friendIndex]?ary[friendIndex].name:"");
-                var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
-                p.enemies.push(...enemies)
-            });
-            console.log('court', court.id, ', players', court.players);
-            // 保存資料
-            if (typeof saveData === 'function') {
-                saveData();
-            }
-            return true;
-        } else {
-            const result = this.courts
-                .filter(c => c.players.length == 0) // 空的場
-                .filter(court => {                  // 填上玩家的場
-                    var freePlayers = this.find4Players_team();
-                    // 人不夠
-                    if (freePlayers.length == 0) {
-                        return false;
-                    }
-                    court.players.push(...freePlayers)
-                    court.players.forEach((p, i, ary) => {
-                        var friendIndex = [1, 0, 3, 2][i];
-                        p.friends.push(ary[friendIndex].name);
-                        var enemies = (i > 1 ? ary.slice(0, 2) : ary.slice(2, 4)).map(e => e.name);
-                        p.enemies.push(...enemies)
-                    });
-                    console.log('court', court.id, ', players', court.players);
-                    return true;
-                });
-            // 保存資料
-            if (typeof saveData === 'function') {
-                saveData();
-            }
-            return result;
+        if (courtId > -1) {
+            return this.assignCourt(courtId).success;
         }
+        return this.courts
+            .filter(c => c.players.length == 0)
+            .filter(court => this.assignCourt(court.id).success);
+    },
+    /**
+     * 取得「目前在場上」的球員 key 集合（id 優先、name 備援）
+     * @return {Set}
+     */
+    getInCourtKeySet() {
+        const keys = new Set();
+        this.courts.forEach(c => {
+            (c.players || []).forEach(p => {
+                if (p && p.id !== undefined && p.id !== null) keys.add(`id:${Number(p.id)}`);
+                else if (p && p.name) keys.add(`name:${p.name}`);
+            });
+        });
+        return keys;
+    },
+    /**
+     * 補位選人：取 count 名「等待中且不在場上」的球員，場次最少優先、同場次隨機
+     * 單次執行、無重試；人數不足直接回空陣列
+     * @param {Number} count
+     * @return {Player[]}
+     */
+    findFillPlayers(count) {
+        this.relinkCourtPlayers();
+        const inCourtKeys = this.getInCourtKeySet();
+        const candidates = this.players.filter(p => {
+            if (p.status !== PLAYER_STATUS.WAIT) return false;
+            const key = (p.id !== undefined && p.id !== null) ? `id:${Number(p.id)}` : `name:${p.name}`;
+            return !inCourtKeys.has(key);
+        });
+        if (candidates.length < count) return [];
+        // 先洗牌再以 playCount 穩定排序：同場次者順序隨機
+        shuffle(candidates);
+        candidates.sort((a, b) => a.playCount - b.playCount);
+        return candidates.slice(0, count);
     },
     /**
      *  找閒置的玩家, 依玩過的場次少到多排序, 同樣場次玩家會按照隊友對手次數積分來排行
-     *  @return {Player[]} - 閒置的玩家
+     *  @return {Player[]} - 閒置的玩家（index 0,1 = 隊伍一、2,3 = 隊伍二）
      */
     find4Players_team() {
         // 保險：避免 localStorage 還原後引用不一致造成 includes() 失準
@@ -359,16 +514,9 @@ const GAME = {
 
         // 雖然一次只能取出四個人, 但是一開始在撈人數的時候直接看最後會需要幾個人, 讓分組時比較多人進來
         var courtCount = this.courts.filter(c => c.players.length == 0).length;
-        console.log(this.players);
 
         // 以 id/name 建立「目前在場上」集合（避免引用不一致時被重複選到）
-        const inCourtKeys = new Set();
-        this.courts.forEach(c => {
-            (c.players || []).forEach(p => {
-                if (p && p.id !== undefined && p.id !== null) inCourtKeys.add(`id:${Number(p.id)}`);
-                else if (p && p.name) inCourtKeys.add(`name:${p.name}`);
-            });
-        });
+        const inCourtKeys = this.getInCourtKeySet();
 
         var players = this.players
             .filter(p => {
@@ -377,7 +525,7 @@ const GAME = {
                 return !inCourtKeys.has(key);
             })// 過濾掉正在遊戲中/不排場/已在場上的玩家
             .reduce((ary, p) => {
-            /* 
+            /*
                 照場次放到籃子裡面, array index x 表示玩過x 場的玩家們
                 [
                     [{玩過0次},{玩過0次}],
@@ -413,7 +561,7 @@ const GAME = {
         if (twoTeams.length == 0) {
             return [];
         }
-        return twoTeams
+        var candidates = twoTeams
             .map(twoTeam => { // twoTeam: [[player1, player2], [player3, player4]]
                 return {
                     twoTeam,
@@ -422,9 +570,8 @@ const GAME = {
             })
             .sort((a, b) => a.totalPlayCount - b.totalPlayCount)               // 上場場次從小排到大
             .filter((obj, i, a) => obj.totalPlayCount == a[0].totalPlayCount)   // 找出上場場次最少的那一群
-            .map(obj => obj.twoTeam)                                            // 只取資料
-            .shuffle()[0]                                                       // 隨機取一組
-            .flat(); 
+            .map(obj => obj.twoTeam);                                           // 只取資料
+        return shuffle(candidates)[0].flat();                                   // 隨機取一組
     },
     /**
      *  加玩家
@@ -450,20 +597,20 @@ const GAME = {
         return player;
     },
     /**
-     *  移除玩家
-     *  @param {String} playerName - 玩家的名字
-     *  @return {Player} - 被移除的玩家資料
+     *  移除球員（F-01/F-16：以 id 為鍵；在場上者禁止移除，避免場地殘留幽靈球員）
+     *  @param {Number} playerId
+     *  @return {{success:boolean, message?:string}}
      */
-    removePlayer(playerName) {
-        var playerIndex = this.players.findIndex(p => p.name == playerName);
-        if (playerIndex !== -1) {
-            var player = this.players.splice(playerIndex, 1)[0];
-            this.updatePlayerListDisplay();
-            return true;
-        } else {
-            console.log(`Player with name ${playerName} not found.`);
-            return false;
+    removePlayerById(playerId) {
+        const player = this.getPlayerById(playerId);
+        if (!player) {
+            return { success: false, message: '找不到球員' };
         }
+        if (this.isPlayerOnCourt(player)) {
+            return { success: false, message: '球員目前在場地上，請先重新分隊或清除場地再刪除' };
+        }
+        this.players.splice(this.players.indexOf(player), 1);
+        return { success: true };
     },
     /**
      *  重置所有玩家紀錄
@@ -484,12 +631,19 @@ const GAME = {
                 this.stopGameTimer(court.id);
             }
             court.players = [];
+            court.manualIds = [];
         });
     },
     /**
-     *  清除所有玩家
+     *  清除所有玩家（F-06：一併清空場地，避免幽靈球員殘留）
      */
     resetPeople() {
+        this.courts.forEach(court => {
+            this.stopGameTimer(court.id);
+            court.players = [];
+            court.status = COURT_STATUS.EMPTY;
+            court.manualIds = [];
+        });
         this.players = [];
     },
     /**
@@ -640,7 +794,7 @@ $(document).ready(() => {
             GAME.players = data.players || [];
             GAME.courts = data.courts || [];
             GAME.gameHistory = data.gameHistory || [];
-            
+
             // 恢復 playerId，避免 ID 重複
             if (data.playerId) {
                 GAME.playerId = data.playerId;
@@ -648,11 +802,11 @@ $(document).ready(() => {
                 // 如果沒有保存 playerId，從現有玩家中找出最大值
                 GAME.playerId = Math.max(...GAME.players.map(p => p.id || 0)) + 1;
             }
-            
+
             // 修復玩家狀態：確保每個玩家都有有效的狀態
             GAME.players.forEach(player => {
-                if (!player.status || (player.status !== PLAYER_STATUS.REST && 
-                    player.status !== PLAYER_STATUS.WAIT && 
+                if (!player.status || (player.status !== PLAYER_STATUS.REST &&
+                    player.status !== PLAYER_STATUS.WAIT &&
                     player.status !== PLAYER_STATUS.PLAY)) {
                     // 如果狀態無效，預設為 REST
                     player.status = PLAYER_STATUS.REST;
@@ -663,12 +817,12 @@ $(document).ready(() => {
                 if (player.playCount === undefined) player.playCount = 0;
                 if (!player.level) player.level = 1;
             });
-            
+
             // 修復場地狀態：確保狀態與實際情況一致
             GAME.courts.forEach(court => {
                 // 如果場地沒有 status 或 status 無效，根據是否有玩家來設定
-                if (!court.status || (court.status !== COURT_STATUS.EMPTY && 
-                    court.status !== COURT_STATUS.ASSIGN && 
+                if (!court.status || (court.status !== COURT_STATUS.EMPTY &&
+                    court.status !== COURT_STATUS.ASSIGN &&
                     court.status !== COURT_STATUS.IN_USE)) {
                     if (court.players && court.players.length > 0) {
                         // 有玩家但狀態不明，設為 ASSIGN（需要確認）
@@ -730,12 +884,19 @@ $(document).ready(() => {
                     GAME.stopGameTimer(court.id);
                 }
             });
-            
+
+            // 手動指派名單：確保欄位存在（舊資料相容），並收斂到實際仍在場上的球員
+            GAME.courts.forEach(court => {
+                if (!Array.isArray(court.manualIds)) court.manualIds = [];
+                court.manualIds = court.manualIds.filter(id =>
+                    (court.players || []).some(p => p && Number(p.id) === Number(id)));
+            });
+
             // 恢復計時器開始時間
             if (data.gameStartTimes) {
                 GAME.gameStartTimes = data.gameStartTimes;
             }
-            
+
             // 恢復進行中的比賽計時器
             GAME.courts.forEach(court => {
                 if (court.status === COURT_STATUS.IN_USE) {
@@ -743,7 +904,7 @@ $(document).ready(() => {
                     GAME.startGameTimer(court.id, false); // false 表示不重置時間，使用保存的時間
                 }
             });
-            
+
             // 修復後會在 renderCourts() 和 renderPlayers() 後保存
         } catch (error) {
             console.error('載入資料時發生錯誤:', error);
@@ -817,7 +978,7 @@ $(document).ready(() => {
                 $('#importMessage').text(message);
                 // 更新畫面並儲存資料
                 renderPlayers();
-                saveData();
+                GAME.save();
                 // 3秒後關閉 modal
                 setTimeout(() => {
                     closeImportPlayersModal();
@@ -838,7 +999,7 @@ $(document).ready(() => {
         if (playerName && playerLevel) {
             GAME.addPlayer(playerName, parseInt(playerLevel));
             renderPlayers();
-            saveData();
+            GAME.save();
             closeAddPlayerModal();
         } else {
             alert('請輸入球員姓名並選擇分級');
@@ -848,40 +1009,33 @@ $(document).ready(() => {
     $('#addCourtBtn').on('click', () => {
         GAME.addCourt();
         renderCourts();
-        saveData();
-    });
-    // 刪除球員按鈕
-    $('#removePlayerBtn').on('click', () => {
-        var playerName = prompt('請輸入要移除的球員姓名:');
-        if (playerName) {
-            GAME.removePlayer(playerName);
-            renderPlayers();
-            saveData();
-        }
+        GAME.save();
     });
     // 刪除空場地按鈕
     $('#removeCourtBtn').on('click', () => {
         GAME.removeEmptyCourt();
         renderCourts();
-        saveData();
+        GAME.save();
     });
     // 重置所有玩家紀錄按鈕
     $('#resetRecordBtn').on('click', () => {
         GAME.resetRecord();
         renderPlayers();
-        saveData();
+        renderCourts();
+        GAME.save();
     });
     // 清除所有玩家按鈕
     $('#resetPeopleBtn').on('click', () => {
         GAME.resetPeople();
         renderPlayers();
-        saveData();
+        renderCourts();
+        GAME.save();
     });
     // 清除所有場地按鈕
     $('#resetCourtBtn').on('click', () => {
         GAME.resetCourt();
         renderCourts();
-        saveData();
+        GAME.save();
     });
     // 排序球員：依顏色等級 LEVEL 由大到小（藍->紅->黃->綠）
     $('#sortPlayersBtn').on('click', () => {
@@ -893,85 +1047,53 @@ $(document).ready(() => {
             return Number(a.id || 0) - Number(b.id || 0);
         });
         renderPlayers();
-        saveData();
+        GAME.save();
     });
     // 增加上場次數
     $(document).on('click', '.incrementBtn', function() {
-        const playerName = $(this).data('player-name');
-        const player = GAME.players.find(p => p.name === playerName);
+        const player = GAME.getPlayerById($(this).data('player-id'));
         if (player) {
             player.playCount++;
             // 依 DOM 結構調整：避免樣式調整後 siblings('span') 失效
             $(this).closest('li').find('.playCount').first().text(player.playCount);
-            saveData();
+            GAME.save();
         }
     });
     // 減少上場次數
     $(document).on('click', '.decrementBtn', function() {
-        const playerName = $(this).data('player-name');
-        const player = GAME.players.find(p => p.name === playerName);
+        const player = GAME.getPlayerById($(this).data('player-id'));
         if (player && player.playCount > 0) {
             player.playCount--;
             $(this).closest('li').find('.playCount').first().text(player.playCount);
-            saveData();
+            GAME.save();
         }
     });
-    // 儲存資料
-    function saveData() {
-        try {
-            // 保存所有重要資料，包括 playerId 和計時器開始時間
-            const dataToSave = {
-                players: GAME.players,
-                courts: GAME.courts,
-                gameHistory: GAME.gameHistory,
-                playerId: GAME.playerId,
-                gameStartTimes: GAME.gameStartTimes || {}
-            };
-            localStorage.setItem("model", JSON.stringify(dataToSave));
-        } catch (error) {
-            console.error('儲存資料失敗:', error);
-            // 如果 localStorage 已滿，嘗試清理舊資料
-            try {
-                localStorage.removeItem("model");
-                const dataToSave = {
-                    players: GAME.players,
-                    courts: GAME.courts,
-                    gameHistory: GAME.gameHistory,
-                    playerId: GAME.playerId,
-                    gameStartTimes: GAME.gameStartTimes || {}
-                };
-                localStorage.setItem("model", JSON.stringify(dataToSave));
-            } catch (e) {
-                console.error('儲存資料失敗（清理後仍失敗）:', e);
-                alert('資料儲存失敗，請檢查瀏覽器儲存空間');
-            }
-        }
-    }
-    // 繪製球員
+    // 繪製球員（F-04：姓名經 escapeHtml；F-16：按鈕改用 data-player-id）
     function renderPlayers() {
         $('#playersList').empty();
         GAME.players.forEach((player, index) => {
+            const safeName = escapeHtml(player.name);
             const $playerItem = $(`
                 <li class="player-background-${player.level}">
                     <div class="player-row">
                         <div class="player-main">
                             <span class="player-number">${index + 1}.</span>
-                            <button class="decrementBtn" data-player-name="${player.name}" aria-label="減少上場次數">-</button>
+                            <button class="decrementBtn" data-player-id="${player.id}" aria-label="減少上場次數">-</button>
                             <span class="player-name">
-                                ${player.name}
+                                ${safeName}
                                 <span class="player-meta">(上場次數: <a class="playCount">${player.playCount}</a>)</span>
                             </span>
-                            <button class="incrementBtn" data-player-name="${player.name}" aria-label="增加上場次數">+</button>
+                            <button class="incrementBtn" data-player-id="${player.id}" aria-label="增加上場次數">+</button>
                         </div>
                         <div class="player-actions">
-                            <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-name="${player.name}">
+                            <button class="restBtn ${player.status == PLAYER_STATUS.REST ? 'resting' : ''}" data-player-id="${player.id}">
                                 ${player.status == PLAYER_STATUS.REST ? '不排場' : '休息'}
                             </button>
-                            <button class="colorBtn" data-player-name="${player.name}" data-current-level="${player.level}" aria-label="切換分級顏色">
+                            <button class="colorBtn" data-player-id="${player.id}" data-current-level="${player.level}" aria-label="切換分級顏色">
                                 <span class="color-indicator color-${player.level}">●</span>
                             </button>
-                            <button class="deleteBtn" data-player-name="${player.name}">刪除</button>
-                            <button class="cleanBtn" data-player-name="${player.name}">重置狀態</button>
+                            <button class="deleteBtn" data-player-id="${player.id}">刪除</button>
+                            <button class="cleanBtn" data-player-id="${player.id}">重置狀態</button>
                         </div>
                     </div>
                 </li>
@@ -985,26 +1107,33 @@ $(document).ready(() => {
         GAME.relinkCourtPlayers();
 
         $('#courtsList').empty();
-        const sortedCourts = GAME.courts.sort((a, b) => a.courtName.localeCompare(b.courtName));
+        // F-02：排序用複本，不改動 GAME.courts 本身的順序
+        const sortedCourts = [...GAME.courts].sort((a, b) => a.courtName.localeCompare(b.courtName));
         sortedCourts.forEach((court) => {
-            const playerNames = court.players.map((p) => p.name).join(', ');
-            // 根据 courtName 分配颜色类
-        let courtClass = '';
-        if (court.id > 5) {
-            courtClass = 'court-random'; // 随机颜色
-        } else {
-            courtClass = 'court-' + court.courtName;
-        }
+        // 顏色 class：court-A ~ court-E 僅在名稱恰為單一字母 A–E 時使用，其餘（含自訂名稱）用 court-random
+        const courtClass = /^[A-E]$/.test(court.courtName) ? 'court-' + court.courtName : 'court-random';
         // 判斷場地是否未確認（有玩家但狀態為 ASSIGN）
         const isUnconfirmed = court.players.length > 0 && court.status === COURT_STATUS.ASSIGN;
         const courtUnconfirmedClass = isUnconfirmed ? 'unconfirmed' : '';
         const gridUnconfirmedClass = isUnconfirmed ? 'unconfirmed' : '';
         // 判斷確認按鈕是否已確認
         const assuranceBtnClass = court.status === COURT_STATUS.IN_USE ? 'confirmed' : '';
+        // 4 個 slot：有人畫球員（ASSIGN 狀態可點名移除、手排者加 📌）、沒人畫可點擊的空位「＋」
+        const slotsHtml = [0, 1, 2, 3].map(i => {
+            const p = court.players[i];
+            if (p) {
+                const manualMark = GAME.isManualPlayer(court, p.id) ? '<span class="manual-mark" title="手動指派">📌</span>' : '';
+                const removable = court.status === COURT_STATUS.ASSIGN ? 'removable' : '';
+                const removeTitle = removable ? 'title="點擊移出場地"' : '';
+                return `<div class="player player${i + 1} player-background-${p.level} courtPlayer ${removable}" data-court-id="${court.id}" data-player-id="${p.id}" ${removeTitle}>${manualMark}${escapeHtml(p.name)}</div>`;
+            }
+            const clickable = court.status !== COURT_STATUS.IN_USE ? 'emptySlot' : '';
+            return `<div class="player player${i + 1} slot-empty ${clickable}" data-court-id="${court.id}" title="加入球員">＋</div>`;
+        }).join('');
         const courtElement = $(`
                 <li class="${courtClass}">
                     <div class="court-header">
-                        <p>${court.courtName} (場地 ${court.id})</p>
+                        <p>${escapeHtml(court.courtName)} <a href="#" class="renameCourtBtn" data-court-id="${court.id}" title="改場地名稱">✏️</a></p>
                         <div class="game-timer" id="court-${court.id}-timer"></div>
                     </div>
                     <div class="court-actions">
@@ -1014,7 +1143,7 @@ $(document).ready(() => {
                     </div>
                     <div class="court ${courtUnconfirmedClass}">
                         <div class="court-grid ${gridUnconfirmedClass}">
-                            ${court.players.map((p, i) => `<div class="player player${i + 1} player-background-${p.level}">${p.name}</div>`).join('')}
+                            ${slotsHtml}
                         </div>
                         <a href="#" class="finishGameBtn" data-court-id="${court.id}">比賽結束</a>
                     </div>
@@ -1038,7 +1167,7 @@ $(document).ready(() => {
                 GAME.gameFinish(courtId);
                 renderCourts();
                 renderPlayers();
-                saveData();
+                GAME.save();
             }
         } else {
             alert('請按下確認鍵');
@@ -1048,24 +1177,13 @@ $(document).ready(() => {
     $(document).off('click', '.assignBtn').on('click', '.assignBtn', function(e) {
         e.preventDefault();
         const courtId = $(this).data('court-id');
-        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
-        if (!court) {
-            alert('找不到場地');
-            return;
+        // 分隊邏輯（保留手動指派者、補滿其餘空位、失敗帶原因）collapse 進 GAME.assignCourt
+        const result = GAME.assignCourt(courtId);
+        if (!result.success && result.message) {
+            alert(result.message);
         }
-        if (court.status < COURT_STATUS.IN_USE) {
-            court.status = COURT_STATUS.ASSIGN; // 派遣隊伍中
-            // 重置計時器（避免上一場殘留）
-            GAME.stopGameTimer(courtId);
-            // 重新分隊
-            court.players.splice(0);
-            GAME.nextGame(courtId);
-            renderCourts();
-            renderPlayers();
-            saveData();
-        } else {
-            alert('已確認隊伍 無法更動');
-        }
+        renderCourts();
+        renderPlayers();
     });
 
     $(document).off('click', '.assuranceBtn').on('click', '.assuranceBtn', function(e) {
@@ -1087,11 +1205,13 @@ $(document).ready(() => {
                 player.status = PLAYER_STATUS.PLAY;
                 player.playCount++;
             });
+            // 成局才記錄隊友/對手（重抽過的陣容不會污染紀錄）
+            GAME.recordMatchHistory(court);
             // 開始計時（重置時間，因為這是新開始的比賽）
             GAME.startGameTimer(courtId, true);
             renderCourts();
             renderPlayers();
-            saveData();
+            GAME.save();
         } else {
             if (court.players.length < 4) {
                 alert('未滿四個人，無法組成隊伍');
@@ -1105,60 +1225,72 @@ $(document).ready(() => {
         e.preventDefault();
         const courtId = $(this).data('court-id');
         const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
-        const courtName = court ? `${court.courtName} (場地 ${court.id})` : `場地 ${courtId}`;
+        const courtName = court ? court.courtName : `場地 ${courtId}`;
         if (!confirm(`確定要「強制清除場地」？\n\n${courtName}\n- 將場上玩家恢復為「等待上場」\n- 停止計時並清空場地\n\n此操作用於異常狀態修復。`)) return;
 
         GAME.forceClearCourt(courtId);
         renderCourts();
         renderPlayers();
-        saveData();
+        GAME.save();
     });
     $(document).on('click', '.restBtn', function () {
-        const playerName = $(this).data('player-name');
-        const player = GAME.players.find(p => p.name === playerName);
+        const player = GAME.getPlayerById($(this).data('player-id'));
+        if (!player) return;
+        // 在場上（含未確認分隊）者禁止切換休息，避免場地與列表狀態脫鉤
+        if (GAME.isPlayerOnCourt(player)) {
+            alert('球員目前在場地上，請先從場地移除再切換休息');
+            return;
+        }
         if (player.status == PLAYER_STATUS.REST) {
             player.status = PLAYER_STATUS.WAIT;
-            $(this).text('休息');
-            $(this).toggleClass('resting', player.status);
         } else if (player.status == PLAYER_STATUS.WAIT) {
             player.status = PLAYER_STATUS.REST;
-            $(this).text('不排場');
-            $(this).toggleClass('resting', player.status);
         } else {
             alert('比賽中無法更動狀態');
             return;
         }
-        saveData();
+        // F-07：toggleClass 第二參數必須是布林
+        $(this).text(player.status === PLAYER_STATUS.REST ? '不排場' : '休息');
+        $(this).toggleClass('resting', player.status === PLAYER_STATUS.REST);
+        GAME.save();
     });
     $(document).on('click', '.deleteBtn', function () {
-        const playerName = $(this).data('player-name');
-        const player = GAME.players.find(p => p.name === playerName);
-        if (player.status == PLAYER_STATUS.REST || player.status == PLAYER_STATUS.WAIT) {
-            if(confirm('確定要刪除' + playerName + '?')) {
-                if(GAME.removePlayer(playerName)) {
-                    renderPlayers();
-                    saveData();        
-                } else {
-                    alert('刪除發生問題');
-                }
-            }
-        } else {
+        const player = GAME.getPlayerById($(this).data('player-id'));
+        if (!player) return;
+        if (player.status == PLAYER_STATUS.PLAY) {
             alert('比賽進行中，目前無法刪除');
             return;
         }
-        saveData();
+        // F-01：在場上（含未確認分隊）的球員禁止刪除，避免場地殘留幽靈球員
+        if (GAME.isPlayerOnCourt(player)) {
+            alert('球員目前在場地上（未確認的分隊），請先重新分隊或清除場地再刪除');
+            return;
+        }
+        if (confirm('確定要刪除' + player.name + '?')) {
+            const result = GAME.removePlayerById(player.id);
+            if (result.success) {
+                renderPlayers();
+                GAME.save();
+            } else {
+                alert(result.message || '刪除發生問題');
+            }
+        }
     });
     $(document).on('click', '.cleanBtn', function () {
-        const playerName = $(this).data('player-name');
-        const player = GAME.players.find(p => p.name === playerName);
+        const player = GAME.getPlayerById($(this).data('player-id'));
+        if (!player) return;
+        // F-10：在場上的球員不可直接重置狀態，否則會與場地狀態脫鉤
+        if (player.status == PLAYER_STATUS.PLAY || GAME.isPlayerOnCourt(player)) {
+            alert('該球員在場地上，請改用場地的「強制清除場地」處理異常');
+            return;
+        }
         player.status = PLAYER_STATUS.REST;
         renderPlayers();
-        saveData();        
+        GAME.save();
     });
     // 顏色按鈕點擊事件
     $(document).on('click', '.colorBtn', function () {
-        const playerName = $(this).data('player-name');
-        const player = GAME.players.find(p => p.name === playerName);
+        const player = GAME.getPlayerById($(this).data('player-id'));
         if (player) {
             // 循環切換顏色等級：1(綠) -> 2(黃) -> 3(紅) -> 4(藍) -> 1(綠)
             player.level = player.level % 4 + 1;
@@ -1166,16 +1298,115 @@ $(document).ready(() => {
             $(this).data('current-level', player.level);
             // 重新渲染球員列表以更新顏色
             renderPlayers();
-            saveData();
+            GAME.save();
         }
     });
+
+    // ===== 手動指派球員上場 =====
+    let assignTargetCourtId = null; // 搜尋面板目前指向的場地
+    window.closeAssignPlayerModal = function() {
+        $('#assignPlayerModal').hide();
+        assignTargetCourtId = null;
+    };
+    // 渲染搜尋結果：可選者可點；不可選者灰階＋原因（休息中/場上/比賽中）
+    function renderAssignPlayerResults(keyword) {
+        const kw = (keyword || '').trim().toLowerCase();
+        const $list = $('#assignPlayerResults').empty();
+        const matched = GAME.players.filter(p => !kw || p.name.toLowerCase().includes(kw));
+        if (matched.length === 0) {
+            $list.append('<li class="assign-empty">沒有符合的球員</li>');
+            return;
+        }
+        matched.forEach(p => {
+            let reason = '';
+            if (p.status === PLAYER_STATUS.PLAY) reason = '比賽中';
+            else if (GAME.isPlayerOnCourt(p)) reason = '場上';
+            else if (p.status === PLAYER_STATUS.REST) reason = '休息中';
+            const disabledClass = reason ? 'disabled' : '';
+            $list.append(`
+                <li class="assign-result ${disabledClass}" data-player-id="${p.id}">
+                    <span class="color-indicator color-${p.level}">●</span>
+                    <span class="assign-name">${escapeHtml(p.name)}</span>
+                    <span class="assign-meta">${reason || `上場 ${p.playCount} 次`}</span>
+                </li>
+            `);
+        });
+    }
+    function openAssignPlayerModal(courtId) {
+        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) return;
+        assignTargetCourtId = Number(courtId);
+        $('#assignCourtName').text(court.courtName);
+        $('#assignPlayerSearchInput').val('');
+        renderAssignPlayerResults('');
+        $('#assignPlayerModal').show();
+        $('#assignPlayerSearchInput').trigger('focus');
+    }
+    // 搜尋欄即時過濾
+    $('#assignPlayerSearchInput').on('input', function() {
+        renderAssignPlayerResults($(this).val());
+    });
+    // 點空位「＋」開啟搜尋面板
+    $(document).on('click', '.emptySlot', function() {
+        openAssignPlayerModal($(this).data('court-id'));
+    });
+    // 點搜尋結果將球員加入場地
+    $(document).on('click', '.assign-result:not(.disabled)', function() {
+        if (assignTargetCourtId === null) return;
+        const result = GAME.assignPlayerToCourt(assignTargetCourtId, $(this).data('player-id'));
+        if (result.success) {
+            closeAssignPlayerModal();
+            renderCourts();
+            renderPlayers();
+        } else {
+            alert(result.message);
+            renderAssignPlayerResults($('#assignPlayerSearchInput').val()); // 清單過期時刷新
+        }
+    });
+    // 點場上球員名字移除（僅 ASSIGN 狀態的球員格帶 removable class）
+    $(document).on('click', '.courtPlayer.removable', function() {
+        const result = GAME.unassignPlayerFromCourt($(this).data('court-id'), $(this).data('player-id'));
+        if (result.success) {
+            renderCourts();
+            renderPlayers();
+        } else if (result.message) {
+            alert(result.message);
+        }
+    });
+
+    // ===== 改場地名稱 =====
+    $(document).on('click', '.renameCourtBtn', function(e) {
+        e.preventDefault();
+        const courtId = $(this).data('court-id');
+        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) return;
+        const input = prompt('請輸入新的場地名稱（最多 8 個字）', court.courtName);
+        if (input === null) return; // 取消
+        const name = input.trim();
+        if (!name) {
+            alert('名稱不可為空白');
+            return;
+        }
+        if (name.length > 8) {
+            alert('名稱最多 8 個字');
+            return;
+        }
+        if (GAME.courts.some(c => c.id !== court.id && c.courtName === name)) {
+            alert('已有同名場地');
+            return;
+        }
+        court.courtName = name;
+        renderCourts();
+        GAME.save();
+    });
+
     // 初始化畫面
     renderPlayers();
     renderCourts();
     GAME.updateGameHistoryDisplay();
-    
+
     // 載入資料後，如果有修復任何狀態，立即保存
     if (model) {
-        saveData();
+        GAME.save();
     }
 });

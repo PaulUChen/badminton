@@ -809,16 +809,16 @@ li:hover {
         flex-wrap: wrap;
         gap: 6px;
     }
-    
+
     #playersList li .player-number {
         flex: 0 0 auto;
     }
-    
+
     #playersList li > span:not(.player-number) {
         flex: 1 1 200px;
         min-width: 150px;
     }
-    
+
     #playersList li button {
         flex: 0 0 auto;
     }
@@ -828,31 +828,31 @@ li:hover {
     .container {
         padding: 12px;
     }
-    
+
     h1 {
         font-size: 1.6em;
         padding: 16px;
     }
-    
+
     h2 {
         font-size: 1em;
         padding: 14px;
     }
-    
+
     .btn-group {
         flex-direction: column;
         gap: 8px;
     }
-    
+
     .btn-group .dropdown {
         width: 100%;
     }
-    
+
     .btn-group .btn {
         width: 100%;
         text-align: center;
     }
-    
+
     #playersList li .player-row {
         gap: 10px;
     }
@@ -884,14 +884,14 @@ li:hover {
         font-size: 0.85em;
         border-radius: 12px;
     }
-    
+
     .players-title-wrap .sortPlayersBtn {
         position: static;
         transform: none;
         margin-top: 8px;
         width: 100%;
     }
-    
+
     .modal-content {
         margin: 5% auto;
         padding: 20px;
@@ -904,13 +904,9 @@ li:hover {
         font-size: 1.4em;
         padding: 12px;
     }
-    
+
     #playersList li .player-actions {
         grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2x2，最多兩列 */
-    }
-
-    .court-actions {
-        gap: 6px;
     }
 
     /* 手機：三顆盡量同列（縮小強制清除，靠右） */
@@ -935,29 +931,9 @@ li:hover {
         max-width: 100%;
         height: 200px;
     }
-    
+
     .player {
         font-size: 18px;
-    }
-}
-
-.pony {
-    width: 100px;
-    height: 100px;
-    background: url('pony.gif') no-repeat center center;
-    background-size: contain;
-    position: absolute;
-    top: 50px;
-    left: 50px;
-    /* animation: movePony 5s linear infinite; */
-}
-
-@keyframes movePony {
-    0% {
-        left: -150px;
-    }
-    100% {
-        left: 100%;
     }
 }
 
@@ -987,22 +963,22 @@ tr:hover {
     background-color: var(--primary-lightest);
 }
 
-.edit-btn { 
+.edit-btn {
     background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-lighter) 100%);
 }
-.edit-btn:hover { 
+.edit-btn:hover {
     background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--primary-lightest) 100%);
 }
-.delete-btn { 
+.delete-btn {
     background: linear-gradient(135deg, var(--danger) 0%, #D99A9A 100%);
 }
-.delete-btn:hover { 
+.delete-btn:hover {
     background: linear-gradient(135deg, #D99A9A 0%, #E5B5B5 100%);
 }
-.attend-btn { 
+.attend-btn {
     background: linear-gradient(135deg, var(--success) 0%, #9FC5B3 100%);
 }
-.attend-btn:hover { 
+.attend-btn:hover {
     background: linear-gradient(135deg, #9FC5B3 0%, #B8D4C7 100%);
 }
 
@@ -1160,7 +1136,7 @@ tr:hover {
     font-size: 1.1em;
     font-weight: 600;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    box-shadow: 
+    box-shadow:
         0 2px 8px rgba(74, 144, 164, 0.4),
         inset 0 1px 2px rgba(255, 255, 255, 0.1);
     border: 2px solid rgba(184, 230, 208, 0.3);
@@ -1171,12 +1147,12 @@ tr:hover {
 
 @keyframes timerGlow {
     from {
-        box-shadow: 
+        box-shadow:
             0 2px 8px rgba(74, 144, 164, 0.4),
             inset 0 1px 2px rgba(255, 255, 255, 0.1);
     }
     to {
-        box-shadow: 
+        box-shadow:
             0 4px 12px rgba(74, 144, 164, 0.6),
             inset 0 1px 3px rgba(255, 255, 255, 0.15);
     }
@@ -1189,4 +1165,150 @@ tr:hover {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border: 2px solid #D1D5DB;
     animation: none;
+}
+
+/* ===== 手動指派球員上場／改場地名稱 ===== */
+
+/* 空位（可點擊加入球員） */
+.slot-empty {
+    border: 2px dashed var(--primary-lighter);
+    background: transparent;
+    color: var(--primary-light);
+    font-size: 28px;
+    font-weight: 300;
+    box-shadow: none;
+}
+
+.slot-empty.emptySlot {
+    cursor: pointer;
+}
+
+.slot-empty.emptySlot:hover {
+    background: var(--primary-lightest);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* 手動指派標記 */
+.manual-mark {
+    font-size: 14px;
+    margin-right: 4px;
+}
+
+/* 未確認狀態下場上球員可點擊移除 */
+.courtPlayer.removable {
+    cursor: pointer;
+    position: relative;
+}
+
+.courtPlayer.removable:hover {
+    border-color: var(--danger);
+}
+
+.courtPlayer.removable:hover::after {
+    content: '×';
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    color: var(--danger);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* 場地改名按鈕（court-header 內） */
+.renameCourtBtn {
+    text-decoration: none;
+    font-size: 0.75em;
+    margin-left: 6px;
+    opacity: 0.85;
+}
+
+.renameCourtBtn:hover {
+    opacity: 1;
+}
+
+/* 加入球員 modal */
+#assignPlayerModal .modal-content input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    box-sizing: border-box;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: #F9FCFD;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    text-align: left;
+}
+
+#assignPlayerModal .modal-content input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(74, 144, 164, 0.18);
+    background: var(--surface);
+}
+
+/* 避免被全域 span 樣式（1.5em/padding）放大 */
+#assignCourtName {
+    font-size: inherit;
+    padding: 0;
+}
+
+#assignPlayerResults {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 6px;
+}
+
+#assignPlayerResults li.assign-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 6px 0;
+    cursor: pointer;
+    text-align: left;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+#assignPlayerResults li.assign-result:hover {
+    background: var(--primary-lightest);
+    border-color: var(--primary-color);
+}
+
+#assignPlayerResults li.assign-result.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+#assignPlayerResults li.assign-result.disabled:hover {
+    background: var(--surface);
+    border-color: var(--border-color);
+    transform: none;
+    box-shadow: none;
+}
+
+#assignPlayerResults .assign-name {
+    flex: 1;
+    font-size: 1em;
+    padding: 0;
+    text-align: left;
+    color: var(--text-primary);
+}
+
+#assignPlayerResults .assign-meta {
+    font-size: 0.85em;
+    padding: 0;
+    color: var(--text-secondary);
+}
+
+#assignPlayerResults li.assign-empty {
+    color: var(--text-secondary);
+    box-shadow: none;
+    border: none;
 }
