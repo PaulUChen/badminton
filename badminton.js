@@ -1139,6 +1139,7 @@ $(document).ready(() => {
                     <div class="court-actions">
                         <a href="#" class="assignBtn" data-court-id="${court.id}">分隊</a>
                         <a href="#" class="assuranceBtn ${assuranceBtnClass}" data-court-id="${court.id}">確定</a>
+                        <a href="#" class="callCourtBtn" data-court-id="${court.id}">叫場</a>
                         <a href="#" class="forceClearBtn" data-court-id="${court.id}">強制清除場地</a>
                     </div>
                     <div class="court ${courtUnconfirmedClass}">
@@ -1398,6 +1399,46 @@ $(document).ready(() => {
         court.courtName = name;
         renderCourts();
         GAME.save();
+    });
+
+    // 語音叫場
+    $(document).off('click', '.callCourtBtn').on('click', '.callCourtBtn', function(e) {
+        e.preventDefault();
+        const courtId = $(this).data('court-id');
+        const court = GAME.courts.find(c => Number(c.id) === Number(courtId));
+        if (!court) return;
+
+        // 取得場地名稱與場上球員名稱
+        const courtName = court.courtName;
+        const playerNames = court.players.map(p => p.name).join(' ');
+
+        // 若場上沒人，可選擇不發音或提示
+        if (!playerNames) {
+            alert('場地上沒有球員');
+            return;
+        }
+
+        // 組裝文字並呼叫瀏覽器語音 API
+        const textToSpeak = `${courtName} 場地， ${playerNames}`;
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'zh-TW'; // 設定中文語音
+        utterance.rate = 0.7;    // 稍微放慢語速，讓廣播更清楚
+
+        // --- 變更聲音的核心代碼 ---
+        const voices = window.speechSynthesis.getVoices();
+
+        // 篩選出所有支援中文的語音包
+        const zhVoices = voices.filter(v => v.lang.includes('zh'));
+
+        window.speechSynthesis.getVoices().filter(v => v.lang.includes('zh')).forEach(v => console.log(v.name))
+        if (zhVoices.length > 0) {
+            // 嘗試尋找常見的男聲 (Windows: Zhiwei, Mac: Liao)
+            // 如果找不到特定的，就強制選陣列裡的第二個聲音 (通常預設女聲是第一個)
+            const targetVoice = zhVoices.find(v => v.name.includes('Zhiwei') || v.name.includes('Liao')) || zhVoices[1] || zhVoices[0];
+            utterance.voice = targetVoice;
+        }
+
+        window.speechSynthesis.speak(utterance);
     });
 
     // 初始化畫面

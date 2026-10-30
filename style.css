@@ -120,7 +120,7 @@ li:hover {
 }
 
 /* Button styles - 統一的按鈕設計 */
-.btn, .sbtn, .finishGameBtn, .assignBtn, .assuranceBtn, .forceClearBtn, .restBtn, .deleteBtn, .cleanBtn, .incrementBtn, .decrementBtn, .leaveBtn {
+.btn, .sbtn, .finishGameBtn, .assignBtn, .assuranceBtn, .forceClearBtn, .restBtn, .deleteBtn, .cleanBtn, .incrementBtn, .decrementBtn, .leaveBtn, .callCourtBtn {
     display: inline-block;
     padding: 8px 16px;
     border: none;
@@ -135,12 +135,12 @@ li:hover {
     box-shadow: 0 2px 4px var(--shadow);
 }
 
-.btn:hover, .sbtn:hover, .finishGameBtn:hover, .assignBtn:hover, .assuranceBtn:hover, .restBtn:hover, .deleteBtn:hover, .cleanBtn:hover, .leaveBtn:hover {
+.btn:hover, .sbtn:hover, .finishGameBtn:hover, .assignBtn:hover, .assuranceBtn:hover, .restBtn:hover, .deleteBtn:hover, .cleanBtn:hover, .leaveBtn:hover, .callCourtBtn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px var(--shadow-hover);
 }
 
-.btn:active, .sbtn:active, .finishGameBtn:active, .assignBtn:active, .assuranceBtn:active, .restBtn:active, .deleteBtn:active, .cleanBtn:active, .leaveBtn:active {
+.btn:active, .sbtn:active, .finishGameBtn:active, .assignBtn:active, .assuranceBtn:active, .restBtn:active, .deleteBtn:active, .cleanBtn:active, .leaveBtn:active, .callCourtBtn:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px var(--shadow);
 }
@@ -188,6 +188,13 @@ li:hover {
 
 .assignBtn:hover, .assuranceBtn:hover {
     background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--primary-lightest) 100%);
+}
+
+.callCourtBtn {
+    background: linear-gradient(135deg, var(--success) 0%, #9FC5B3 100%);
+}
+.callCourtBtn:hover {
+    background: linear-gradient(135deg, #9FC5B3 0%, #B8D4C7 100%);
 }
 
 /* 強制清除場地 */
@@ -358,7 +365,8 @@ li:hover {
 
 .court-actions .forceClearBtn,
 .court-actions .assignBtn,
-.court-actions .assuranceBtn {
+.court-actions .assuranceBtn,
+.court-actions .callCourtBtn {
     padding: 8px 14px;
 }
 
