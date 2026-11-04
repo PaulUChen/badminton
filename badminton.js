@@ -788,6 +788,12 @@ const GAME = {
 };
 $(document).ready(() => {
     const model = localStorage.getItem("model")
+
+    // 預設偷播放
+    const dummyUtterance = new SpeechSynthesisUtterance('');
+    dummyUtterance.volume = 0; // 靜音
+    window.speechSynthesis.speak(dummyUtterance);
+
     if (model) {
         try {
             const data = JSON.parse(model);
@@ -1425,18 +1431,18 @@ $(document).ready(() => {
         utterance.rate = 0.7;    // 稍微放慢語速，讓廣播更清楚
 
         // --- 變更聲音的核心代碼 ---
-        const voices = window.speechSynthesis.getVoices();
+        // const voices = window.speechSynthesis.getVoices();
 
-        // 篩選出所有支援中文的語音包
-        const zhVoices = voices.filter(v => v.lang.includes('zh'));
+        // // 篩選出所有支援中文的語音包
+        // const zhVoices = voices.filter(v => v.lang.includes('zh'));
 
-        window.speechSynthesis.getVoices().filter(v => v.lang.includes('zh')).forEach(v => console.log(v.name))
-        if (zhVoices.length > 0) {
-            // 嘗試尋找常見的男聲 (Windows: Zhiwei, Mac: Liao)
-            // 如果找不到特定的，就強制選陣列裡的第二個聲音 (通常預設女聲是第一個)
-            const targetVoice = zhVoices.find(v => v.name.includes('Zhiwei') || v.name.includes('Liao')) || zhVoices[1] || zhVoices[0];
-            utterance.voice = targetVoice;
-        }
+        // window.speechSynthesis.getVoices().filter(v => v.lang.includes('zh')).forEach(v => console.log(v.name))
+        // if (zhVoices.length > 0) {
+        //     // 嘗試尋找常見的男聲 (Windows: Zhiwei, Mac: Liao)
+        //     // 如果找不到特定的，就強制選陣列裡的第二個聲音 (通常預設女聲是第一個)
+        //     const targetVoice = zhVoices.find(v => v.name.includes('Zhiwei') || v.name.includes('Liao')) || zhVoices[1] || zhVoices[0];
+        //     utterance.voice = targetVoice;
+        // }
 
         window.speechSynthesis.speak(utterance);
     });
