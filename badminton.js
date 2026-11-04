@@ -1416,7 +1416,7 @@ $(document).ready(() => {
 
         // 取得場地名稱與場上球員名稱
         const courtName = court.courtName;
-        const playerNames = court.players.map(p => p.name).join(' ');
+        const playerNames = court.players.map(p => p.name).join('，');
 
         // 若場上沒人，可選擇不發音或提示
         if (!playerNames) {
